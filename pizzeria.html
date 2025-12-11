@@ -1,0 +1,2235 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Dashboard Runs — Code PIN</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Supabase JS v2 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-main: #050608;
+      --bg-card: #111318;
+      --bg-card-soft: #181b24;
+      --accent: #d4af37;
+      --accent-soft: #936f1f;
+      --text-main: #f5f5f5;
+      --text-muted: #9ca3af;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+      background: radial-gradient(circle at top, #151828 0, #050608 55%);
+      color: var(--text-main);
+      min-height: 100vh;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    header {
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: linear-gradient(
+        to right,
+        rgba(0, 0, 0, 0.9),
+        rgba(8, 8, 8, 0.9)
+      );
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .title-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .title-block span {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .user-info-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .role-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--accent-soft);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .btn {
+      border: none;
+      outline: none;
+      background: var(--accent-soft);
+      color: #111;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.1s ease, box-shadow 0.1s ease,
+        background 0.15s ease;
+      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
+      background: var(--accent);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+    }
+
+    .btn-danger {
+      background: #7f1d1d;
+      color: #fee2e2;
+    }
+
+    .btn-danger:hover {
+      background: #b91c1c;
+    }
+
+    .btn-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+    }
+
+    main {
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: radial-gradient(circle at top left, #272937 0, #111318 50%);
+      border-radius: 18px;
+      padding: 18px 18px 16px;
+      border: 1px solid rgba(15, 23, 42, 0.9);
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at top right,
+        rgba(212, 175, 55, 0.12),
+        transparent 60%
+      );
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .card-title {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+    }
+
+    .card-subtitle {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.85);
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .stat-pill span {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .separator {
+      margin: 12px 0;
+      border-top: 1px dashed rgba(148, 163, 184, 0.4);
+      position: relative;
+      z-index: 1;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .field-group label {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .field-group input,
+    .field-group textarea,
+    .field-group select {
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 10px;
+      border: 1px solid rgba(30, 64, 175, 0.6);
+      padding: 8px 10px;
+      color: var(--text-main);
+      font-size: 13px;
+      resize: vertical;
+    }
+
+    .field-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .field-row .field-group {
+      flex: 1;
+    }
+
+    input::placeholder,
+    textarea::placeholder {
+      color: rgba(148, 163, 184, 0.7);
+    }
+
+    .text-sm {
+      font-size: 12px;
+    }
+
+    .text-xs {
+      font-size: 11px;
+    }
+
+    .muted {
+      color: var(--text-muted);
+    }
+
+    .runs-list {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 360px;
+      overflow: auto;
+      padding-right: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .run-item {
+      border-radius: 12px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      padding: 10px 10px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .run-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+
+    .run-date {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .run-description {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .run-sales {
+      font-size: 11px;
+      color: #a7f3d0;
+      margin-top: 2px;
+    }
+
+    .run-photo-zone {
+      margin-top: 6px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .run-photo-zone input[type="file"] {
+      font-size: 11px;
+      max-width: 200px;
+    }
+
+    .photos-preview {
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .photos-preview img {
+      width: 50px;
+      height: 50px;
+      object-fit: cover;
+      border-radius: 6px;
+      border: 1px solid rgba(30, 64, 175, 0.9);
+    }
+
+    /* Admin */
+    .admin-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 20px;
+    }
+
+    .stats-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    .stat-card {
+      flex: 1;
+      background: rgba(15, 23, 42, 0.9);
+      border-radius: 12px;
+      padding: 8px 10px;
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      font-size: 12px;
+    }
+
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .stat-value {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      margin-top: 8px;
+    }
+
+    .table th,
+    .table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+    }
+
+    .table th {
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .table tbody tr {
+      cursor: pointer;
+      transition: background 0.1s ease;
+    }
+
+    .table tbody tr:hover {
+      background: rgba(15, 23, 42, 0.9);
+    }
+
+    .pill-role {
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .pill-role.admin {
+      border-color: rgba(248, 250, 252, 0.9);
+      color: #fee2e2;
+      background: rgba(127, 29, 29, 0.75);
+    }
+
+    .pill-role.user,
+    .pill-role.runner,
+    .pill-role.vendeur {
+      border-color: rgba(96, 165, 250, 0.8);
+      color: #bfdbfe;
+      background: rgba(30, 64, 175, 0.6);
+    }
+
+    .badge-soft {
+      border-radius: 999px;
+      padding: 2px 8px;
+      font-size: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-muted);
+    }
+
+    /* Overlay PIN GTA-RP style */
+    .pin-overlay {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at top, #111827 0, #020617 55%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+    }
+
+    .pin-card {
+      width: 310px;
+      max-width: calc(100% - 40px);
+      background: radial-gradient(circle at top, #1f2937 0, #020617 60%);
+      border-radius: 20px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
+      padding: 18px 18px 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .pin-card::before {
+      content: "";
+      position: absolute;
+      inset: -80px -80px auto auto;
+      background: radial-gradient(
+        circle at top right,
+        rgba(212, 175, 55, 0.2),
+        transparent 65%
+      );
+      opacity: 0.8;
+      pointer-events: none;
+    }
+
+    .pin-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pin-title {
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .pin-server {
+      font-size: 11px;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pin-server-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #22c55e;
+      box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
+    }
+
+    .pin-screen {
+      margin-top: 12px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.95);
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      padding: 10px 12px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pin-label-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    .pin-display {
+      display: flex;
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .pin-dot {
+      flex: 1;
+      height: 32px;
+      border-radius: 999px;
+      border: 1px solid rgba(75, 85, 99, 0.9);
+      background: radial-gradient(circle at top, #020617 0, #020617 55%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      letter-spacing: 0.4em;
+    }
+
+    .pin-dot.filled {
+      background: radial-gradient(circle at top, #1d4ed8 0, #020617 55%);
+      box-shadow: inset 0 0 12px rgba(15, 23, 42, 1),
+        0 0 18px rgba(37, 99, 235, 0.8);
+    }
+
+    .pin-status {
+      margin-top: 6px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .pin-status-error {
+      color: #fecaca;
+    }
+
+    .pin-keypad {
+      margin-top: 10px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .pin-key {
+      height: 52px;
+      border-radius: 16px;
+      border: 1px solid rgba(55, 65, 81, 0.9);
+      background: radial-gradient(circle at top, #020617 0, #020617 65%);
+      color: #e5e7eb;
+      font-size: 18px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: transform 0.06s ease, box-shadow 0.06s ease,
+        border-color 0.12s ease;
+    }
+
+    .pin-key::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(
+        circle at top,
+        rgba(56, 189, 248, 0.2),
+        transparent 70%
+      );
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
+
+    .pin-key:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.9);
+      border-color: rgba(59, 130, 246, 0.8);
+    }
+
+    .pin-key:active {
+      transform: translateY(1px) scale(0.98);
+      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.9);
+    }
+
+    .pin-key:active::after {
+      opacity: 1;
+    }
+
+    .pin-key.action {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #9ca3af;
+    }
+
+    .pin-footer {
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      color: var(--text-muted);
+      position: relative;
+      z-index: 1;
+    }
+
+    .pin-footer span {
+      opacity: 0.7;
+    }
+
+    .pin-footer strong {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* 🏎️ VOITURES */
+    .car-item {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(51, 65, 85, 0.8);
+      padding: 10px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .car-status {
+      font-size: 12px;
+    }
+
+    .car-free {
+      color: #22c55e;
+    }
+
+    .car-taken {
+      color: #ef4444;
+    }
+
+    .car-btn {
+      padding: 6px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: var(--accent-soft);
+      border: none;
+      color: #111;
+      font-weight: bold;
+      font-size: 12px;
+    }
+
+    .car-btn[disabled] {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    /* SECTION RECRUTEMENT STYLE AFFICHE */
+    .recrutement-card {
+      background: #b31515;
+      padding: 25px;
+      border-radius: 18px;
+      margin-bottom: 30px;
+      text-align: center;
+      color: #ffe4b3;
+      border: 2px solid #ffcf4d;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+    }
+
+    .recrutement-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+    }
+
+    .recrutement-subtitle {
+      font-size: 20px;
+      margin-bottom: 20px;
+      color: #ffe07e;
+      letter-spacing: 0.15em;
+    }
+
+    .recrutement-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 25px;
+    }
+
+    .recrutement-box {
+      background: #fff3d1;
+      border-radius: 14px;
+      padding: 18px;
+      color: #000;
+      border: 2px solid #d49b2d;
+    }
+
+    .recrutement-role {
+      font-size: 22px;
+      font-weight: 900;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+
+    .runner-color {
+      color: #c62828;
+    }
+
+    .vendeur-color {
+      color: #d47c00;
+    }
+
+    .rec-list {
+      text-align: left;
+      padding-left: 10px;
+      margin-bottom: 14px;
+      font-size: 15px;
+    }
+
+    .profil-title {
+      font-weight: 700;
+      margin-bottom: 6px;
+      text-align: left;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        padding: 16px;
+      }
+      .grid,
+      .admin-grid {
+        grid-template-columns: 1fr;
+      }
+      .recrutement-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- OVERLAY PIN -->
+  <div id="pin-overlay" class="pin-overlay">
+    <div class="pin-card">
+      <div class="pin-header">
+        <div>
+          <div class="pin-title">Secure Access Panel</div>
+          <div class="text-xs muted">Entrez votre Code PIN pour accéder à votre fiche.</div>
+        </div>
+        <div class="pin-server">
+          <div class="pin-server-dot"></div>
+          <span>Server: <strong>Back Office</strong></span>
+        </div>
+      </div>
+
+      <div class="pin-screen">
+        <div class="pin-label-row">
+          <span>IDENTIFIANT</span>
+          <span class="text-xs">Code PIN &bull; 4 chiffres</span>
+        </div>
+        <div class="pin-display">
+          <div class="pin-dot" id="pin-dot-0"></div>
+          <div class="pin-dot" id="pin-dot-1"></div>
+          <div class="pin-dot" id="pin-dot-2"></div>
+          <div class="pin-dot" id="pin-dot-3"></div>
+        </div>
+        <div id="pin-status" class="pin-status">
+          Codes admin & utilisateur gérés côté base de données (Supabase).
+        </div>
+      </div>
+
+      <div class="pin-keypad">
+        <div class="pin-key" data-digit="1">1</div>
+        <div class="pin-key" data-digit="2">2</div>
+        <div class="pin-key" data-digit="3">3</div>
+        <div class="pin-key" data-digit="4">4</div>
+        <div class="pin-key" data-digit="5">5</div>
+        <div class="pin-key" data-digit="6">6</div>
+        <div class="pin-key" data-digit="7">7</div>
+        <div class="pin-key" data-digit="8">8</div>
+        <div class="pin-key" data-digit="9">9</div>
+        <div class="pin-key action" id="pin-clear">EFFACER</div>
+        <div class="pin-key" data-digit="0">0</div>
+        <div class="pin-key action" id="pin-validate">VALIDER</div>
+      </div>
+
+      <div class="pin-footer">
+        <span>ROLE ADMIN via champ <strong>role = 'admin'</strong> dans la table <strong>users</strong>.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER (affiché après login) -->
+  <header id="main-header" class="hidden">
+    <div class="title-block">
+      <h1>Run Control Panel</h1>
+      <span id="header-subtitle">Connecté</span>
+    </div>
+    <div class="user-info-bar">
+      <span id="header-username"></span>
+      <span id="header-role" class="role-badge"></span>
+      <button class="btn-secondary btn-sm" id="btn-logout">Déconnexion</button>
+  <button onclick="window.location.href='article.html'">article</button>
+  </header>
+
+  <main>
+    <!-- SECTION RECRUTEMENT RUNNER & VENDEUR -->
+    <section class="recrutement-card">
+      <h1 class="recrutement-title">RECRUTEMENT</h1>
+      <h2 class="recrutement-subtitle">RUNNER & VENDEUR</h2>
+
+      <div class="recrutement-grid">
+
+        <!-- RUNNER -->
+        <div class="recrutement-box">
+          <h3 class="recrutement-role runner-color">RUNNER</h3>
+
+          <ul class="rec-list">
+            <li>📌 <strong>Quotas :</strong> 3 runs par semaine minimum</li>
+            <li>💵 <strong>Run speedo :</strong> 100K + 30K prime</li>
+          </ul>
+
+          <h4 class="profil-title">Profil recherché :</h4>
+          <ul class="rec-list">
+            <li>✔ Disponible</li>
+            <li>✔ Motivé</li>
+          </ul>
+        </div>
+
+        <!-- VENDEUR -->
+        <div class="recrutement-box">
+          <h3 class="recrutement-role vendeur-color">VENDEUR</h3>
+
+          <ul class="rec-list">
+            <li>📌 <strong>Quotas :</strong> 4 heures par semaine minimum</li>
+            <li>💰 <strong>Commission :</strong> 15 % par facture</li>
+            <li>🌙 <strong>Bonus :</strong> Heure du soir payée en plus</li>
+          </ul>
+
+          <h4 class="profil-title">Profil recherché :</h4>
+          <ul class="rec-list">
+            <li>✔ Disponible</li>
+            <li>✔ Motivé</li>
+          </ul>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 🏎️ SECTION VOITURES (VISIBLE POUR TOUS LES RÔLES CONNECTÉS) -->
+    <section id="cars-section" class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Véhicules disponibles</div>
+          <div class="card-subtitle">Liste des voitures & état (disponible / prise).</div>
+        </div>
+      </div>
+
+      <div id="cars-list" class="runs-list">
+        <!-- Rempli en JS -->
+      </div>
+    </section>
+
+    <!-- SECTION UTILISATEUR -->
+    <section id="user-section" class="hidden">
+      <div class="grid">
+        <!-- FICHE UTILISATEUR -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Ma fiche</div>
+              <div class="card-subtitle">Résumé de ton activité et info compte.</div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Nom / Pseudo</label>
+            <div id="user-name" class="text-sm"></div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label>Code PIN</label>
+              <div id="user-pin" class="text-sm muted"></div>
+            </div>
+            <div class="field-group">
+              <label>Date de création</label>
+              <div id="user-created" class="text-sm muted"></div>
+            </div>
+          </div>
+
+          <div class="separator"></div>
+
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Nombre de runs</div>
+              <div id="user-runs-count" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Photos envoyées</div>
+              <div id="user-photos-count" class="stat-value">0</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- NOUVEAU RUN -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Ajouter un run</div>
+              <div class="card-subtitle">
+                Déclare un nouveau run + ce qui a été vendu.
+              </div>
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Description du run</label>
+            <textarea id="run-description" rows="3" placeholder="Ex: Run du soir, zone est, contrôle de stock..."></textarea>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label>Ce qui a été vendu (description)</label>
+              <input
+                id="run-sales-desc"
+                type="text"
+                placeholder="Ex: 3 packs, 2 boîtes..."
+              />
+            </div>
+            <div class="field-group">
+              <label>Montant total (€)</label>
+              <input
+                id="run-sales-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Ex: 250"
+              />
+            </div>
+          </div>
+
+          <div class="field-group">
+            <label>Photo du run (optionnel)</label>
+            <input type="file" id="run-photo" accept="image/*" />
+          </div>
+
+          <button class="btn" id="btn-add-run">Enregistrer le run + Photo</button>
+          <p class="text-xs muted" style="margin-top: 6px;">
+            Après avoir enregistré, tu pourras ajouter des photos sur ce run (preuve / stock / produits vendus, etc.).
+          </p>
+        </div>
+      </div>
+
+      <!-- PANEL VENDEUR (si role = vendeur) -->
+      <div id="vendeur-panel" class="card hidden" style="margin-top:20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Ajouter une vente</div>
+            <div class="card-subtitle">Encode ce que tu as vendu + prix + photo</div>
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Description</label>
+          <input type="text" id="vente-desc" placeholder="Ex : 3 boîtes, 1 pack..." />
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Quantité</label>
+            <input type="number" id="vente-qty" value="1" min="1" />
+          </div>
+
+          <div class="field-group">
+            <label>Montant (€)</label>
+            <input type="number" id="vente-price" placeholder="Ex : 150" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Photo (optionnel)</label>
+          <input type="file" id="vente-photo" accept="image/*" />
+        </div>
+
+        <button class="btn" id="btn-add-vente">Enregistrer la vente</button>
+      </div>
+
+      <!-- LISTE DES VENTES (vendeur) -->
+      <div id="liste-ventes" class="card hidden" style="margin-top:20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Mes ventes</div>
+            <div class="card-subtitle">Historique de tout ce que tu as vendu</div>
+          </div>
+        </div>
+
+        <div id="ventes-list" class="runs-list"></div>
+      </div>
+
+      <!-- LISTE DES RUNS UTILISATEUR -->
+      <div class="card" style="margin-top: 22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Mes runs</div>
+            <div class="card-subtitle">
+              Historique des runs + photos associées.
+            </div>
+          </div>
+          <div class="stat-pill">
+            Total runs: <span id="user-runs-count-pill">0</span>
+          </div>
+        </div>
+
+        <div id="user-runs-list" class="runs-list">
+          <!-- Runs générés en JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION ADMIN -->
+    <section id="admin-section" class="hidden">
+      <div class="admin-grid">
+        <!-- Stats globales -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Dashboard Admin</div>
+              <div class="card-subtitle">Vue d'ensemble des comptes & activité.</div>
+            </div>
+            <span class="badge-soft">Mode Admin</span>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-card">
+              <div class="stat-label">Utilisateurs</div>
+              <div id="admin-users-count" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total runs</div>
+              <div id="admin-runs-count" class="stat-value">0</div>
+            </div>
+          </div>
+
+          <div class="stats-row" style="margin-top: 12px;">
+            <div class="stat-card">
+              <div class="stat-label">Photos enregistrées</div>
+              <div id="admin-photos-count" class="stat-value">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Montant total ventes (€)</div>
+              <div id="admin-sales-sum" class="stat-value">0</div>
+            </div>
+          </div>
+
+          <p class="text-xs muted" style="margin-top: 10px;">
+            Les ventes sont calculées depuis la table <strong>ventes</strong> (amount).
+          </p>
+        </div>
+
+        <!-- Création / édition de compte -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Gestion des comptes</div>
+              <div class="card-subtitle">
+                Crée ou modifie rapidement un utilisateur (Code PIN dédié).
+              </div>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label>Nom / Pseudo</label>
+              <input id="admin-user-name" type="text" placeholder="Ex: Logan, Rico, etc." />
+            </div>
+            <div class="field-group">
+              <label>Code PIN (4 chiffres)</label>
+              <input id="admin-user-pin" type="text" maxlength="4" placeholder="Ex: 6554" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field-group">
+              <label>Rôle</label>
+              <select id="admin-user-role">
+                <option value="user">Utilisateur</option>
+                <option value="admin">Admin</option>
+                <option value="runner">Runner</option>
+                <option value="vendeur">Vendeur</option>
+              </select>
+            </div>
+          </div>
+
+          <div style="margin-top: 8px; display: flex; gap: 8px;">
+            <button class="btn" id="btn-admin-save-user">Sauvegarder / Créer</button>
+            <button class="btn-danger btn-sm hidden" id="btn-admin-delete-user">
+              Supprimer l'utilisateur sélectionné
+            </button>
+          </div>
+          <p class="text-xs muted" style="margin-top: 6px;">
+            Quand tu cliques sur un utilisateur dans la liste à gauche, il se charge ici
+            pour édition / suppression.
+          </p>
+        </div>
+      </div>
+
+      <!-- Liste utilisateurs + détails -->
+      <div class="card" style="margin-top: 22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Utilisateurs & activité</div>
+            <div class="card-subtitle">
+              Clique sur un utilisateur pour voir ses runs & stats.
+            </div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1.1fr 1.3fr; gap: 20px;">
+          <div>
+            <table class="table" id="admin-users-table">
+              <thead>
+                <tr>
+                  <th>Nom</th>
+                  <th>PIN</th>
+                  <th>Rôle</th>
+                  <th>Runs</th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Lignes générées JS -->
+              </tbody>
+            </table>
+          </div>
+
+          <div>
+            <div class="field-group">
+              <label>Utilisateur sélectionné</label>
+              <div id="admin-selected-user" class="text-sm muted">
+                Aucun utilisateur sélectionné.
+              </div>
+            </div>
+            <div class="separator"></div>
+            <div id="admin-selected-runs" class="runs-list" style="max-height: 260px;">
+              <!-- Runs utilisateur sélectionné -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VENTES (ADMIN) -->
+      <div class="card" style="margin-top: 22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Ventes (tous vendeurs)</div>
+            <div class="card-subtitle">
+              Vue globale des ventes enregistrées par les vendeurs.
+            </div>
+          </div>
+        </div>
+
+        <div style="max-height: 360px; overflow:auto;">
+          <table class="table" id="admin-ventes-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Vendeur</th>
+                <th>Description</th>
+                <th>Qté</th>
+                <th>Montant (€)</th>
+                <th>Date</th>
+                <th>Photo</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Ventes générées JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // ⚙️ CONFIG SUPABASE — À REMPLACER SI BESOIN
+    const SUPABASE_URL = "https://ldhxyloqdtplevdkgnah.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaHh5bG9xZHRwbGV2ZGtnbmFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMTg5NjAsImV4cCI6MjA3Njc5NDk2MH0.pnoppZtVEP3uDrMEfauPAMMB93EmGO5Ur1pg4OY99-o";
+    const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // État global
+    let currentUser = null;
+    let currentRole = null; // 'user' | 'admin' | 'runner' | 'vendeur'
+    let adminSelectedUserId = null;
+    let adminUsersCache = {}; // id -> user (pour les ventes admin)
+
+    // Gestion du PIN
+    let pinValue = "";
+
+    function updatePinDots() {
+      for (let i = 0; i < 4; i++) {
+        const dot = document.getElementById("pin-dot-" + i);
+        if (!dot) continue;
+        if (i < pinValue.length) {
+          dot.classList.add("filled");
+          dot.textContent = "•";
+        } else {
+          dot.classList.remove("filled");
+          dot.textContent = "";
+        }
+      }
+    }
+
+    function setPinStatus(message, isError = false) {
+      const el = document.getElementById("pin-status");
+      if (!el) return;
+      el.textContent = message;
+      if (isError) {
+        el.classList.add("pin-status-error");
+      } else {
+        el.classList.remove("pin-status-error");
+      }
+    }
+
+    function appendDigit(digit) {
+      if (pinValue.length >= 4) return;
+      pinValue += digit;
+      updatePinDots();
+    }
+
+    function clearPin() {
+      pinValue = "";
+      updatePinDots();
+      setPinStatus(
+        "Codes admin & utilisateur gérés côté base de données (Supabase).",
+        false
+      );
+    }
+
+    async function validatePin() {
+      if (pinValue.length !== 4) {
+        setPinStatus("Le Code PIN doit contenir 4 chiffres.", true);
+        return;
+      }
+
+      setPinStatus("Vérification du Code PIN en cours...", false);
+
+      try {
+        const { data, error } = await supa
+          .from("users")
+          .select("*")
+          .eq("pin_code", pinValue)
+          .maybeSingle();
+
+        if (error) {
+          console.error(error);
+          setPinStatus("Erreur de connexion à la base. Vérifie Supabase.", true);
+          return;
+        }
+
+        if (!data) {
+          setPinStatus("Code PIN incorrect ou inconnu.", true);
+          clearPin();
+          return;
+        }
+
+        // On a un utilisateur
+        currentUser = data;
+        currentRole = data.role || "user";
+
+        document.getElementById("pin-overlay").classList.add("hidden");
+        document.getElementById("main-header").classList.remove("hidden");
+
+        document.getElementById("header-username").textContent =
+          data.username || "Utilisateur #" + data.id;
+
+        let roleLabel;
+        switch (currentRole) {
+          case "admin":
+            roleLabel = "Admin";
+            break;
+          case "runner":
+            roleLabel = "Runner";
+            break;
+          case "vendeur":
+            roleLabel = "Vendeur";
+            break;
+          default:
+            roleLabel = "Utilisateur";
+        }
+        const roleEl = document.getElementById("header-role");
+        roleEl.textContent = roleLabel;
+
+        const subtitle = currentRole === "admin"
+          ? "Connecté en mode administrateur."
+          : "Connecté sur ta fiche personnelle.";
+
+        document.getElementById("header-subtitle").textContent = subtitle;
+
+        if (currentRole === "admin") {
+          document.getElementById("admin-section").classList.remove("hidden");
+          document.getElementById("user-section").classList.add("hidden");
+          await loadAdminDashboard();
+          await loadCars(); // chargement des voitures pour admin
+        } else {
+          document.getElementById("user-section").classList.remove("hidden");
+          document.getElementById("admin-section").classList.add("hidden");
+
+          // roles user / runner / vendeur utilisent le dashboard utilisateur
+          await loadUserDashboard();
+
+          // Si vendeur : afficher panneau + ventes
+          if (currentRole === "vendeur") {
+            document.getElementById("vendeur-panel").classList.remove("hidden");
+            document.getElementById("liste-ventes").classList.remove("hidden");
+            await loadVentes();
+          } else {
+            document.getElementById("vendeur-panel").classList.add("hidden");
+            document.getElementById("liste-ventes").classList.add("hidden");
+          }
+
+          await loadCars(); // chargement des voitures pour tous les autres rôles
+        }
+      } catch (err) {
+        console.error(err);
+        setPinStatus("Erreur inconnue. Regarde la console.", true);
+      }
+    }
+
+    function setupPinPad() {
+      const digitButtons = document.querySelectorAll(".pin-key[data-digit]");
+      digitButtons.forEach((btn) => {
+        btn.addEventListener("click", () => {
+          appendDigit(btn.dataset.digit);
+        });
+      });
+
+      const clearBtn = document.getElementById("pin-clear");
+      if (clearBtn) clearBtn.addEventListener("click", clearPin);
+
+      const validateBtn = document.getElementById("pin-validate");
+      if (validateBtn) validateBtn.addEventListener("click", validatePin);
+    }
+
+    // ---------------------------------------
+    // 🏎️ GESTION DES VOITURES (VISIBLE POUR TOUS)
+    // ---------------------------------------
+    async function loadCars() {
+      if (!currentUser) return;
+
+      const { data: cars, error } = await supa
+        .from("cars")
+        .select("*")
+        .order("id", { ascending: true });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const list = document.getElementById("cars-list");
+      list.innerHTML = "";
+
+      if (!cars || cars.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "text-sm muted";
+        empty.textContent = "Aucune voiture enregistrée pour le moment.";
+        list.appendChild(empty);
+        return;
+      }
+
+      cars.forEach((car) => {
+        const isTaken = car.is_taken;
+        const statusText = isTaken
+          ? `Pris par utilisateur #${car.taken_by}`
+          : "Disponible";
+
+        const statusClass = isTaken ? "car-taken" : "car-free";
+
+        const btnLabel = isTaken
+          ? (car.taken_by === currentUser.id ? "Libérer" : "Indisponible")
+          : "Prendre";
+
+        const disabled = isTaken && car.taken_by !== currentUser.id;
+
+        const div = document.createElement("div");
+        div.className = "car-item";
+
+        div.innerHTML = `
+          <div>
+            <strong>${car.name}</strong><br>
+            <span class="car-status ${statusClass}">${statusText}</span>
+          </div>
+          <button class="car-btn" data-id="${car.id}" ${disabled ? "disabled" : ""}>
+            ${btnLabel}
+          </button>
+        `;
+
+        list.appendChild(div);
+      });
+
+      // Attach events
+      document.querySelectorAll(".car-btn").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const carId = btn.dataset.id;
+          const { data: carData, error: carErr } = await supa
+            .from("cars")
+            .select("*")
+            .eq("id", carId)
+            .maybeSingle();
+
+          if (carErr || !carData) {
+            console.error(carErr);
+            return;
+          }
+
+          if (!carData.is_taken) {
+            // Prendre voiture
+            const { error: updErr } = await supa
+              .from("cars")
+              .update({
+                is_taken: true,
+                taken_by: currentUser.id,
+              })
+              .eq("id", carData.id);
+            if (updErr) {
+              console.error(updErr);
+            }
+          } else if (carData.taken_by === currentUser.id) {
+            // Libérer voiture (seulement si prise par l'utilisateur courant)
+            const { error: updErr } = await supa
+              .from("cars")
+              .update({
+                is_taken: false,
+                taken_by: null,
+              })
+              .eq("id", carData.id);
+            if (updErr) {
+              console.error(updErr);
+            }
+          }
+
+          await loadCars();
+        });
+      });
+    }
+
+    // ---------------------------------------
+    // SECTION UTILISATEUR
+    // ---------------------------------------
+    async function loadUserDashboard() {
+      if (!currentUser) return;
+
+      // Remplir fiche utilisateur
+      document.getElementById("user-name").textContent =
+        currentUser.username || "Utilisateur #" + currentUser.id;
+      document.getElementById("user-pin").textContent = currentUser.pin_code;
+      document.getElementById("user-created").textContent =
+        currentUser.created_at
+          ? new Date(currentUser.created_at).toLocaleString("fr-FR")
+          : "-";
+
+      await refreshUserRunsAndPhotos();
+    }
+
+    async function refreshUserRunsAndPhotos() {
+      if (!currentUser) return;
+
+      const userId = currentUser.id;
+
+      const { data: runs, error: runsError } = await supa
+        .from("runs")
+        .select(
+          "id, description, sales_description, sales_amount, created_at, photos:photos(url)"
+        )
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (runsError) {
+        console.error(runsError);
+        return;
+      }
+
+      const runsListEl = document.getElementById("user-runs-list");
+      runsListEl.innerHTML = "";
+
+      let totalPhotos = 0;
+
+      if (runs && runs.length > 0) {
+        runs.forEach((run) => {
+          const runEl = document.createElement("div");
+          runEl.className = "run-item";
+          const createdAt = run.created_at
+            ? new Date(run.created_at).toLocaleString("fr-FR")
+            : "-";
+          const salesDesc = run.sales_description || "";
+          const salesAmount = run.sales_amount || 0;
+          const photos = run.photos || [];
+
+          totalPhotos += photos.length;
+
+          runEl.innerHTML = `
+            <div class="run-header">
+              <div><strong>Run #${run.id}</strong></div>
+              <div class="run-date">${createdAt}</div>
+            </div>
+            <div class="run-description">${run.description || ""}</div>
+            ${
+              salesDesc || salesAmount
+                ? `<div class="run-sales">
+                     Ventes: ${salesDesc ? salesDesc + " — " : ""}${
+                    salesAmount ? salesAmount + " €" : ""
+                  }
+                   </div>`
+                : ""
+            }
+            <div class="run-photo-zone">
+              <input type="file" class="photo-input" data-run-id="${
+                run.id
+              }" accept="image/*" />
+              <button class="btn btn-sm btn-secondary btn-upload-photo" data-run-id="${
+                run.id
+              }">Uploader photo</button>
+            </div>
+            ${
+              photos.length
+                ? `<div class="photos-preview">
+                    ${photos
+                      .map(
+                        (p) =>
+                          `<img src="${p.url}" alt="photo run ${run.id}" />`
+                      )
+                      .join("")}
+                   </div>`
+                : ""
+            }
+          `;
+
+          runsListEl.appendChild(runEl);
+        });
+      } else {
+        const emptyEl = document.createElement("div");
+        emptyEl.className = "text-sm muted";
+        emptyEl.textContent = "Aucun run pour le moment.";
+        runsListEl.appendChild(emptyEl);
+      }
+
+      const runsCount = runs ? runs.length : 0;
+      document.getElementById("user-runs-count").textContent = runsCount;
+      document.getElementById("user-runs-count-pill").textContent = runsCount;
+      document.getElementById("user-photos-count").textContent = totalPhotos;
+
+      // lier les boutons d'upload
+      const uploadButtons = document.querySelectorAll(".btn-upload-photo");
+      uploadButtons.forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const runId = btn.dataset.runId;
+          await uploadPhotoForRun(runId, currentUser.id);
+          await refreshUserRunsAndPhotos();
+        });
+      });
+    }
+
+    async function uploadPhotoForRun(runId, userId) {
+      const input = document.querySelector(
+        `.photo-input[data-run-id="${runId}"]`
+      );
+      if (!input || !input.files || !input.files[0]) {
+        alert("Sélectionne une image avant d'uploader.");
+        return;
+      }
+
+      const file = input.files[0];
+      const filenameSafe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const filePath = `${userId}/${runId}/${Date.now()}_${filenameSafe}`;
+
+      try {
+        const { error } = await supa.storage
+          .from("runs-photos")
+          .upload(filePath, file);
+
+        if (error) {
+          console.error(error);
+          alert("Erreur upload image (voir console).");
+          return;
+        }
+
+        const { data: publicUrlData, error: publicUrlError } = supa.storage
+          .from("runs-photos")
+          .getPublicUrl(filePath);
+
+        if (publicUrlError) {
+          console.error(publicUrlError);
+          alert("Erreur génération URL publique.");
+          return;
+        }
+
+        const publicUrl = publicUrlData.publicUrl;
+
+        const { error: insertError } = await supa.from("photos").insert({
+          run_id: runId,
+          user_id: userId,
+          url: publicUrl,
+        });
+
+        if (insertError) {
+          console.error(insertError);
+          alert("Erreur enregistrement photo en base.");
+          return;
+        }
+
+        input.value = "";
+      } catch (err) {
+        console.error(err);
+        alert("Erreur inattendue pendant l'upload.");
+      }
+    }
+
+    async function addRun() {
+      if (!currentUser) return;
+
+      const descEl = document.getElementById("run-description");
+      const salesDescEl = document.getElementById("run-sales-desc");
+      const salesAmountEl = document.getElementById("run-sales-amount");
+      const photoInput = document.getElementById("run-photo");
+
+      const description = descEl.value.trim();
+      const salesDesc = salesDescEl.value.trim();
+      const salesAmount = parseFloat(salesAmountEl.value || "0") || 0;
+
+      if (!description) {
+        alert("Merci de remplir au minimum la description du run.");
+        return;
+      }
+
+      // 1️⃣ Création du run
+      const { data: runInsert, error: runError } = await supa
+        .from("runs")
+        .insert({
+          user_id: currentUser.id,
+          description,
+          sales_description: salesDesc || null,
+          sales_amount: salesAmount || null,
+        })
+        .select()
+        .maybeSingle();
+
+      if (runError || !runInsert) {
+        console.error(runError);
+        alert("Erreur enregistrement du run.");
+        return;
+      }
+
+      const runId = runInsert.id;
+
+      // 2️⃣ Si pas de photo, on s'arrête là
+      if (!photoInput.files.length) {
+        await refreshUserRunsAndPhotos();
+        descEl.value = "";
+        salesDescEl.value = "";
+        salesAmountEl.value = "";
+        photoInput.value = "";
+        return;
+      }
+
+      const file = photoInput.files[0];
+      const filenameSafe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+      const filePath = `${currentUser.id}/${runId}/${Date.now()}_${filenameSafe}`;
+
+      // 3️⃣ Upload dans Supabase Storage
+      const { error: uploadError } = await supa.storage
+        .from("runs-photos")
+        .upload(filePath, file);
+
+      if (uploadError) {
+        console.error(uploadError);
+        alert("Erreur upload image.");
+        return;
+      }
+
+      // 4️⃣ Récupérer URL publique
+      const { data: urlData } = supa.storage
+        .from("runs-photos")
+        .getPublicUrl(filePath);
+
+      const publicUrl = urlData.publicUrl;
+
+      // 5️⃣ Enregistrer la photo en base
+      const { error: photoError } = await supa.from("photos").insert({
+        run_id: runId,
+        user_id: currentUser.id,
+        url: publicUrl,
+      });
+
+      if (photoError) {
+        console.error(photoError);
+        alert("Erreur enregistrement photo.");
+        return;
+      }
+
+      // 6️⃣ Nettoyer formulaire + refresh
+      descEl.value = "";
+      salesDescEl.value = "";
+      salesAmountEl.value = "";
+      photoInput.value = "";
+
+      await refreshUserRunsAndPhotos();
+    }
+
+    // ---------------------------------------
+    // VENTES (VENDEUR)
+    // ---------------------------------------
+    async function addVente() {
+      if (!currentUser) return;
+
+      const desc = document.getElementById("vente-desc").value.trim();
+      const qty = parseInt(document.getElementById("vente-qty").value || "1");
+      const price = parseFloat(document.getElementById("vente-price").value || "0");
+      const photoInput = document.getElementById("vente-photo");
+
+      if (!desc || !price) {
+        alert("Description et montant obligatoires.");
+        return;
+      }
+
+      // 1️⃣ Upload photo si existe
+      let photoUrl = null;
+
+      if (photoInput.files.length > 0) {
+        const file = photoInput.files[0];
+        const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+        const filePath = `${currentUser.id}/ventes/${Date.now()}_${safeName}`;
+
+        const { error: uploadError } = await supa.storage
+          .from("runs-photos")
+          .upload(filePath, file);
+
+        if (uploadError) {
+          console.error(uploadError);
+          alert("Erreur upload photo vente.");
+          return;
+        }
+
+        const { data } = supa.storage
+          .from("runs-photos")
+          .getPublicUrl(filePath);
+
+        photoUrl = data.publicUrl;
+      }
+
+      // 2️⃣ Enregistrement vente
+      const { error } = await supa.from("ventes").insert({
+        user_id: currentUser.id,
+        description: desc,
+        quantity: qty,
+        amount: price,
+        photo_url: photoUrl
+      });
+
+      if (error) {
+        console.error(error);
+        alert("Erreur enregistrement vente.");
+        return;
+      }
+
+      // reset
+      document.getElementById("vente-desc").value = "";
+      document.getElementById("vente-qty").value = "1";
+      document.getElementById("vente-price").value = "";
+      document.getElementById("vente-photo").value = "";
+
+      await loadVentes();
+      await refreshAdminStats(); // mettre à jour les stats ventes si admin est connecté ailleurs
+    }
+
+    async function loadVentes() {
+      if (!currentUser) return;
+
+      const { data: ventes, error } = await supa
+        .from("ventes")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const list = document.getElementById("ventes-list");
+      list.innerHTML = "";
+
+      if (!ventes || ventes.length === 0) {
+        list.innerHTML = "<div class='text-sm muted'>Aucune vente enregistrée.</div>";
+        return;
+      }
+
+      ventes.forEach((v) => {
+        const el = document.createElement("div");
+        el.className = "run-item";
+
+        el.innerHTML = `
+          <div class="run-header">
+            <strong>Vente #${v.id}</strong>
+            <div class="run-date">${new Date(v.created_at).toLocaleString("fr-FR")}</div>
+          </div>
+          <div class="run-description">${v.description}</div>
+          <div class="run-sales">${v.quantity} × — ${v.amount} €</div>
+          ${
+            v.photo_url
+              ? `<div class="photos-preview">
+                  <img src="${v.photo_url}" alt="photo vente ${v.id}" />
+                 </div>`
+              : ""
+          }
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    // ---------------------------------------
+    // SECTION ADMIN
+    // ---------------------------------------
+    async function loadAdminDashboard() {
+      await refreshAdminStats();
+      await refreshAdminUsersTable();
+      await refreshAdminVentes();
+    }
+
+    async function refreshAdminStats() {
+      // Utilisateurs
+      const { count: usersCount, error: usersErr } = await supa
+        .from("users")
+        .select("*", { count: "exact", head: true });
+      if (usersErr) console.error(usersErr);
+
+      // Runs
+      const { count: runsCount, error: runsErr } = await supa
+        .from("runs")
+        .select("*", { count: "exact", head: true });
+      if (runsErr) console.error(runsErr);
+
+      // Photos
+      const { count: photosCount, error: photosErr } = await supa
+        .from("photos")
+        .select("*", { count: "exact", head: true });
+      if (photosErr) console.error(photosErr);
+
+      // Somme des ventes (table ventes)
+      const { data: ventesData, error: ventesErr } = await supa
+        .from("ventes")
+        .select("amount");
+      let totalSales = 0;
+      if (!ventesErr && ventesData) {
+        ventesData.forEach((v) => {
+          if (v.amount) totalSales += Number(v.amount);
+        });
+      }
+
+      document.getElementById("admin-users-count").textContent =
+        usersCount ?? 0;
+      document.getElementById("admin-runs-count").textContent =
+        runsCount ?? 0;
+      document.getElementById("admin-photos-count").textContent =
+        photosCount ?? 0;
+      document.getElementById("admin-sales-sum").textContent =
+        totalSales.toFixed(2);
+    }
+
+    async function refreshAdminUsersTable() {
+      const { data, error } = await supa
+        .from("users")
+        .select("id, username, pin_code, role, created_at, runs:runs(id)")
+        .order("created_at", { ascending: true });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      adminUsersCache = {};
+
+      const tbody = document.querySelector("#admin-users-table tbody");
+      tbody.innerHTML = "";
+
+      if (!data || data.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 4;
+        td.textContent = "Aucun utilisateur.";
+        td.className = "text-sm muted";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      data.forEach((user) => {
+        adminUsersCache[user.id] = user;
+
+        const tr = document.createElement("tr");
+        tr.dataset.userId = user.id;
+
+        const runsCount = user.runs ? user.runs.length : 0;
+        const username = user.username || "Utilisateur #" + user.id;
+        const role = user.role || "user";
+        const roleClass =
+          role === "admin" ? "admin" : (role === "runner" ? "runner" : (role === "vendeur" ? "vendeur" : "user"));
+
+        tr.innerHTML = `
+          <td>${username}</td>
+          <td>${user.pin_code}</td>
+          <td>
+            <span class="pill-role ${roleClass}">${role.toUpperCase()}</span>
+          </td>
+          <td>${runsCount}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // click sur user
+      tbody.querySelectorAll("tr").forEach((row) => {
+        row.addEventListener("click", async () => {
+          const userId = row.dataset.userId;
+          await loadAdminUserDetails(userId);
+        });
+      });
+    }
+
+    async function loadAdminUserDetails(userId) {
+      adminSelectedUserId = userId;
+
+      // Infos user
+      const { data: user, error } = await supa
+        .from("users")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (error || !user) {
+        console.error(error);
+        return;
+      }
+
+      const username = user.username || "Utilisateur #" + user.id;
+      document.getElementById(
+        "admin-selected-user"
+      ).textContent = `${username} (PIN: ${user.pin_code}, rôle: ${
+        user.role || "user"
+      })`;
+
+      // remplir le formulaire d'édition
+      document.getElementById("admin-user-name").value = user.username || "";
+      document.getElementById("admin-user-pin").value = user.pin_code || "";
+      document.getElementById("admin-user-role").value = user.role || "user";
+
+      document
+        .getElementById("btn-admin-delete-user")
+        .classList.remove("hidden");
+
+      // Récup runs
+      const { data: runs, error: runsErr } = await supa
+        .from("runs")
+        .select(
+          "id, description, sales_description, sales_amount, created_at, photos:photos(url)"
+        )
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false });
+
+      if (runsErr) {
+        console.error(runsErr);
+        return;
+      }
+
+      const runsEl = document.getElementById("admin-selected-runs");
+      runsEl.innerHTML = "";
+
+      if (!runs || runs.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "text-sm muted";
+        empty.textContent = "Aucun run pour cet utilisateur.";
+        runsEl.appendChild(empty);
+        return;
+      }
+
+      runs.forEach((run) => {
+        const el = document.createElement("div");
+        el.className = "run-item";
+        const createdAt = run.created_at
+          ? new Date(run.created_at).toLocaleString("fr-FR")
+          : "-";
+        const salesDesc = run.sales_description || "";
+        const salesAmount = run.sales_amount || 0;
+        const photos = run.photos || [];
+
+        el.innerHTML = `
+          <div class="run-header">
+            <div><strong>Run #${run.id}</strong></div>
+            <div class="run-date">${createdAt}</div>
+          </div>
+          <div class="run-description">${run.description || ""}</div>
+          ${
+            salesDesc || salesAmount
+              ? `<div class="run-sales">
+                   Ventes: ${salesDesc ? salesDesc + " — " : ""}${
+                  salesAmount ? salesAmount + " €" : ""
+                }
+                 </div>`
+              : ""
+          }
+          ${
+            photos.length
+              ? `<div class="photos-preview">
+                  ${photos
+                    .map(
+                      (p) => `<img src="${p.url}" alt="photo run ${run.id}" />`
+                    )
+                    .join("")}
+                 </div>`
+              : ""
+          }
+        `;
+        runsEl.appendChild(el);
+      });
+    }
+
+    async function refreshAdminVentes() {
+      const { data: ventes, error } = await supa
+        .from("ventes")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error(error);
+        return;
+      }
+
+      const tbody = document.querySelector("#admin-ventes-table tbody");
+      tbody.innerHTML = "";
+
+      if (!ventes || ventes.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 7;
+        td.textContent = "Aucune vente enregistrée.";
+        td.className = "text-sm muted";
+        tr.appendChild(td);
+        tbody.appendChild(tr);
+        return;
+      }
+
+      ventes.forEach((v) => {
+        const tr = document.createElement("tr");
+        const user = adminUsersCache[v.user_id];
+        const username = user ? (user.username || ("User #" + user.id)) : ("ID " + v.user_id);
+
+        tr.innerHTML = `
+          <td>${v.id}</td>
+          <td>${username}</td>
+          <td>${v.description}</td>
+          <td>${v.quantity}</td>
+          <td>${v.amount}</td>
+          <td>${new Date(v.created_at).toLocaleString("fr-FR")}</td>
+          <td>${
+            v.photo_url
+              ? `<img src="${v.photo_url}" alt="vente ${v.id}" style="width:50px;height:50px;border-radius:6px;object-fit:cover;">`
+              : "-"
+          }</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    async function adminSaveUser() {
+      const name = document.getElementById("admin-user-name").value.trim();
+      const pin = document.getElementById("admin-user-pin").value.trim();
+      const role = document.getElementById("admin-user-role").value || "user";
+
+      if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+        alert("Le Code PIN doit être 4 chiffres.");
+        return;
+      }
+
+      if (!name) {
+        alert("Merci d'indiquer un nom / pseudo.");
+        return;
+      }
+
+      try {
+        if (adminSelectedUserId) {
+          // update
+          const { error } = await supa
+            .from("users")
+            .update({ username: name, pin_code: pin, role })
+            .eq("id", adminSelectedUserId);
+
+          if (error) {
+            console.error(error);
+            alert("Erreur mise à jour de l'utilisateur.");
+            return;
+          }
+        } else {
+          // insert
+          const { error } = await supa.from("users").insert({
+            username: name,
+            pin_code: pin,
+            role,
+          });
+          if (error) {
+            console.error(error);
+            alert("Erreur création utilisateur.");
+            return;
+          }
+        }
+
+        await refreshAdminUsersTable();
+        await refreshAdminStats();
+        await refreshAdminVentes();
+
+        adminSelectedUserId = null;
+        document.getElementById("admin-selected-user").textContent =
+          "Aucun utilisateur sélectionné.";
+        document.getElementById("admin-selected-runs").innerHTML = "";
+        document.getElementById("btn-admin-delete-user").classList.add("hidden");
+        document.getElementById("admin-user-name").value = "";
+        document.getElementById("admin-user-pin").value = "";
+        document.getElementById("admin-user-role").value = "user";
+      } catch (err) {
+        console.error(err);
+        alert("Erreur inattendue pendant la sauvegarde.");
+      }
+    }
+
+    async function adminDeleteUser() {
+      if (!adminSelectedUserId) return;
+      const confirmDelete = confirm(
+        "Supprimer cet utilisateur ? Tous ses runs et photos resteront si tu ne les supprimes pas séparément."
+      );
+      if (!confirmDelete) return;
+
+      try {
+        const { error } = await supa
+          .from("users")
+          .delete()
+          .eq("id", adminSelectedUserId);
+
+        if (error) {
+          console.error(error);
+          alert("Erreur suppression utilisateur.");
+          return;
+        }
+
+        adminSelectedUserId = null;
+        document.getElementById("admin-selected-user").textContent =
+          "Aucun utilisateur sélectionné.";
+        document.getElementById("admin-selected-runs").innerHTML = "";
+        document.getElementById("btn-admin-delete-user").classList.add("hidden");
+        document.getElementById("admin-user-name").value = "";
+        document.getElementById("admin-user-pin").value = "";
+        document.getElementById("admin-user-role").value = "user";
+
+        await refreshAdminUsersTable();
+        await refreshAdminStats();
+        await refreshAdminVentes();
+      } catch (err) {
+        console.error(err);
+        alert("Erreur inattendue pendant la suppression.");
+      }
+    }
+
+    // ---------------------------------------
+    // Déconnexion
+    // ---------------------------------------
+    function logout() {
+      currentUser = null;
+      currentRole = null;
+      adminSelectedUserId = null;
+
+      document.getElementById("main-header").classList.add("hidden");
+      document.getElementById("user-section").classList.add("hidden");
+      document.getElementById("admin-section").classList.add("hidden");
+      document.getElementById("pin-overlay").classList.remove("hidden");
+
+      clearPin();
+      const carsList = document.getElementById("cars-list");
+      if (carsList) carsList.innerHTML = "";
+    }
+
+    // ---------------------------------------
+    // INIT
+    // ---------------------------------------
+    document.addEventListener("DOMContentLoaded", () => {
+      setupPinPad();
+
+      const btnAddRun = document.getElementById("btn-add-run");
+      if (btnAddRun) btnAddRun.addEventListener("click", addRun);
+
+      const btnAddVente = document.getElementById("btn-add-vente");
+      if (btnAddVente) btnAddVente.addEventListener("click", addVente);
+
+      const btnLogout = document.getElementById("btn-logout");
+      if (btnLogout) btnLogout.addEventListener("click", logout);
+
+      const btnAdminSaveUser = document.getElementById("btn-admin-save-user");
+      if (btnAdminSaveUser)
+        btnAdminSaveUser.addEventListener("click", adminSaveUser);
+
+      const btnAdminDeleteUser = document.getElementById(
+        "btn-admin-delete-user"
+      );
+      if (btnAdminDeleteUser)
+        btnAdminDeleteUser.addEventListener("click", adminDeleteUser);
+    });
+  </script>
+</body>
+</html>

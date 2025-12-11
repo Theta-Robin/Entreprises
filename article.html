@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Liste des Produits & Calculateur</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f0f0f;
+      color: #fff;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #d4af37;
+      margin-bottom: 25px;
+    }
+
+    .product-grid {
+      max-width: 900px;
+      margin: auto;
+      background: #1a1a1a;
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid #333;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+    }
+
+    .product {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid #333;
+    }
+
+    .product:last-child {
+      border-bottom: none;
+    }
+
+    .product input {
+      width: 70px;
+      padding: 5px;
+      border-radius: 5px;
+      border: 1px solid #555;
+      background: #222;
+      color: white;
+      text-align: center;
+    }
+
+    .total {
+      text-align: right;
+      margin-top: 20px;
+      font-size: 22px;
+      font-weight: bold;
+      color: #d4af37;
+    }
+  </style>
+</head>
+
+<body>
+  <button onclick="window.location.href='pizzeria.html'">Recel</button>
+
+<h1>Catalogue — Prix & Quantités (USD)</h1>
+
+<div class="product-grid" id="productList"></div>
+
+<div class="total">Total général : <span id="grandTotal">0.00</span> $</div>
+
+<script>
+  // 🛍️ LISTE DES PRODUITS (MODIFIE ICI)
+  const produits = [
+    { nom: "Produit A", prix: 10 },
+    { nom: "Produit B", prix: 15 },
+    { nom: "Produit C", prix: 7.5 },
+    { nom: "Produit D", prix: 20 },
+    { nom: "Produit E", prix: 5 },
+  ];
+
+  // 📌 Génération de la liste
+  const container = document.getElementById("productList");
+
+  produits.forEach((p, index) => {
+    const item = document.createElement("div");
+    item.classList.add("product");
+
+    item.innerHTML = `
+      <div>
+        <strong>${p.nom}</strong><br>
+        <span style="color:#d4af37">${p.prix.toFixed(2)} $ / unité</span>
+      </div>
+
+      <div>
+        <input type="number" min="0" value="0" data-index="${index}" />
+      </div>
+
+      <div>
+        <span id="total-${index}">0.00</span> $
+      </div>
+    `;
+
+    container.appendChild(item);
+  });
+
+  // 📌 Calcul automatique
+  function recalculerTotal() {
+    let totalGeneral = 0;
+
+    document.querySelectorAll("input").forEach(input => {
+      const index = input.dataset.index;
+      const qte = parseInt(input.value) || 0;
+      const prix = produits[index].prix;
+      const total = qte * prix;
+
+      document.getElementById(`total-${index}`).innerText = total.toFixed(2);
+      totalGeneral += total;
+    });
+
+    document.getElementById("grandTotal").innerText = totalGeneral.toFixed(2);
+  }
+
+  document.querySelectorAll("input").forEach(input => {
+    input.addEventListener("input", recalculerTotal);
+  });
+</script>
+
+</body>
+</html>
