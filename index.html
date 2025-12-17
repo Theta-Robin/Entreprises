@@ -2,771 +2,433 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
-  <title>Dashboard Runs — Code PIN</title>
+  <title>Punk Noodles — Back Office (Code PIN)</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Supabase JS v2 -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+  <!-- ✅ PDF (jsPDF + AutoTable) -->
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.3/dist/jspdf.plugin.autotable.min.js"></script>
+
   <style>
-    :root {
-      --bg-main: #050608;
-      --bg-card: #111318;
-      --bg-card-soft: #181b24;
-      --accent: #d4af37;
-      --accent-soft: #936f1f;
-      --text-main: #f5f5f5;
-      --text-muted: #9ca3af;
-      --danger: #ef4444;
-      --success: #22c55e;
+    :root{
+      /* 🎨 Punk Noodles — Candy Red + Salmon */
+      --bg-main:#07060a;
+      --bg-card:#121018;
+      --bg-card-soft:#171423;
+
+      --candy:#ff2d55;        /* rouge-bonbon */
+      --salmon:#ff7a90;       /* saumon */
+      --candy-deep:#b3122e;
+
+      --text-main:#fbfbff;
+      --text-muted:#a6a2b3;
+
+      --danger:#ef4444;
+      --success:#22c55e;
+
+      --ring: rgba(255,45,85,.45);
+      --stroke: rgba(255,255,255,.08);
+      --stroke-strong: rgba(255,255,255,.12);
+      --glass: rgba(12, 10, 18, .72);
     }
 
-    * {
-      box-sizing: border-box;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background:
+        radial-gradient(900px 450px at 15% 0%, rgba(255,45,85,.22), transparent 55%),
+        radial-gradient(900px 450px at 85% 0%, rgba(255,122,144,.18), transparent 55%),
+        radial-gradient(circle at top, #171323 0, #07060a 55%);
+      color:var(--text-main);
+      min-height:100vh;
+    }
+    .hidden{display:none!important}
+
+    header{
+      padding:16px 24px;
+      border-bottom:1px solid rgba(255,122,144,.22);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      background: linear-gradient(to right, rgba(0,0,0,.86), rgba(14,8,16,.86));
+      position:sticky;
+      top:0;
+      z-index:5;
+      backdrop-filter: blur(8px);
+    }
+    .title-block{display:flex;flex-direction:column;gap:4px}
+    .title-block h1{
+      margin:0;
+      font-size:18px;
+      letter-spacing:.10em;
+      text-transform:uppercase;
+      color:var(--salmon);
+    }
+    .title-block span{font-size:12px;color:var(--text-muted)}
+    .user-info-bar{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted)}
+    .role-badge{
+      padding:4px 10px;border-radius:999px;
+      border:1px solid rgba(255,122,144,.35);
+      font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+      background: rgba(255,122,144,.06);
+      color: #ffd0d8;
     }
 
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-        sans-serif;
-      background: radial-gradient(circle at top, #151828 0, #050608 55%);
-      color: var(--text-main);
-      min-height: 100vh;
+    .btn{
+      border:none; outline:none;
+      background: linear-gradient(135deg, var(--candy), var(--salmon));
+      color:#120611;
+      padding:9px 14px;
+      border-radius:999px;
+      font-size:13px;
+      cursor:pointer;
+      font-weight:800;
+      transition: transform .08s ease, box-shadow .12s ease, filter .12s ease;
+      box-shadow: 0 10px 30px rgba(255,45,85,.18);
     }
-
-    .hidden {
-      display: none !important;
-    }
-
-    header {
-      padding: 16px 24px;
-      border-bottom: 1px solid rgba(212, 175, 55, 0.25);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: linear-gradient(
-        to right,
-        rgba(0, 0, 0, 0.9),
-        rgba(8, 8, 8, 0.9)
-      );
-      position: sticky;
-      top: 0;
-      z-index: 5;
-    }
-
-    .title-block {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .title-block h1 {
-      margin: 0;
-      font-size: 20px;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--accent);
-    }
-
-    .title-block span {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .user-info-bar {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .role-badge {
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--accent-soft);
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
-
-    .btn {
-      border: none;
-      outline: none;
-      background: var(--accent-soft);
-      color: #111;
-      padding: 8px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: transform 0.1s ease, box-shadow 0.1s ease,
-        background 0.15s ease;
-      box-shadow: 0 0 0 rgba(0, 0, 0, 0);
-    }
-
-    .btn:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.55);
-      background: var(--accent);
-    }
-
-    .btn-secondary {
+    .btn:hover{transform: translateY(-1px); filter:saturate(1.08); box-shadow: 0 16px 40px rgba(255,45,85,.25)}
+    .btn:active{transform: translateY(1px) scale(.99)}
+    .btn-secondary{
       background: transparent;
       color: var(--text-muted);
-      border: 1px solid rgba(148, 163, 184, 0.5);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text-main);
-    }
-
-    .btn-danger {
-      background: #7f1d1d;
-      color: #fee2e2;
-    }
-
-    .btn-danger:hover {
-      background: #b91c1c;
-    }
-
-    .btn-sm {
-      padding: 4px 10px;
-      font-size: 11px;
-    }
-
-    main {
-      padding: 24px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1.3fr 1fr;
-      gap: 20px;
-    }
-
-    .card {
-      background: radial-gradient(circle at top left, #272937 0, #111318 50%);
-      border-radius: 18px;
-      padding: 18px 18px 16px;
-      border: 1px solid rgba(15, 23, 42, 0.9);
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.7);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(
-        circle at top right,
-        rgba(212, 175, 55, 0.12),
-        transparent 60%
-      );
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
-    .card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .card-title {
-      font-size: 14px;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--text-muted);
-    }
-
-    .card-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    .stat-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 4px 10px;
-      border-radius: 999px;
-      background: rgba(15, 23, 42, 0.85);
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .stat-pill span {
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .separator {
-      margin: 12px 0;
-      border-top: 1px dashed rgba(148, 163, 184, 0.4);
-      position: relative;
-      z-index: 1;
-    }
-
-    .field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      margin-bottom: 10px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .field-group label {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .field-group input,
-    .field-group textarea,
-    .field-group select {
-      background: rgba(15, 23, 42, 0.9);
-      border-radius: 10px;
-      border: 1px solid rgba(30, 64, 175, 0.6);
-      padding: 8px 10px;
-      color: var(--text-main);
-      font-size: 13px;
-      resize: vertical;
-    }
-
-    .field-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .field-row .field-group {
-      flex: 1;
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      color: rgba(148, 163, 184, 0.7);
-    }
-
-    .text-sm {
-      font-size: 12px;
-    }
-
-    .text-xs {
-      font-size: 11px;
-    }
-
-    .muted {
-      color: var(--text-muted);
-    }
-
-    .runs-list {
-      margin-top: 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      max-height: 360px;
-      overflow: auto;
-      padding-right: 4px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .run-item {
-      border-radius: 12px;
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.8);
-      padding: 10px 10px 8px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .run-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 12px;
-    }
-
-    .run-date {
-      color: var(--text-muted);
-      font-size: 11px;
-    }
-
-    .run-description {
-      font-size: 13px;
-      margin-top: 4px;
-    }
-
-    .run-sales {
-      font-size: 11px;
-      color: #a7f3d0;
-      margin-top: 2px;
-    }
-
-    .run-photo-zone {
-      margin-top: 6px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      align-items: center;
-    }
-
-    .run-photo-zone input[type="file"] {
-      font-size: 11px;
-      max-width: 200px;
-    }
-
-    .photos-preview {
-      margin-top: 4px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px;
-    }
-
-    .photos-preview img {
-      width: 50px;
-      height: 50px;
-      object-fit: cover;
-      border-radius: 6px;
-      border: 1px solid rgba(30, 64, 175, 0.9);
-    }
-
-    /* Admin */
-    .admin-grid {
-      display: grid;
-      grid-template-columns: 1fr 1.2fr;
-      gap: 20px;
-    }
-
-    .stats-row {
-      display: flex;
-      gap: 10px;
-      margin-top: 6px;
-    }
-
-    .stat-card {
-      flex: 1;
-      background: rgba(15, 23, 42, 0.9);
-      border-radius: 12px;
-      padding: 8px 10px;
-      border: 1px solid rgba(51, 65, 85, 0.8);
-      font-size: 12px;
-    }
-
-    .stat-label {
-      color: var(--text-muted);
-      font-size: 11px;
-    }
-
-    .stat-value {
-      font-size: 18px;
-      font-weight: 600;
-      color: var(--accent);
-    }
-
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 12px;
-      margin-top: 8px;
-    }
-
-    .table th,
-    .table td {
-      padding: 6px 8px;
-      border-bottom: 1px solid rgba(30, 41, 59, 0.8);
-    }
-
-    .table th {
-      text-align: left;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .table tbody tr {
-      cursor: pointer;
-      transition: background 0.1s ease;
-    }
-
-    .table tbody tr:hover {
-      background: rgba(15, 23, 42, 0.9);
-    }
-
-    .pill-role {
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 10px;
-      border: 1px solid rgba(148, 163, 184, 0.6);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    .pill-role.admin {
-      border-color: rgba(248, 250, 252, 0.9);
-      color: #fee2e2;
-      background: rgba(127, 29, 29, 0.75);
-    }
-
-    .pill-role.user,
-    .pill-role.runner,
-    .pill-role.vendeur {
-      border-color: rgba(96, 165, 250, 0.8);
-      color: #bfdbfe;
-      background: rgba(30, 64, 175, 0.6);
-    }
-
-    .badge-soft {
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 10px;
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--text-muted);
-    }
-
-    /* Overlay PIN GTA-RP style */
-    .pin-overlay {
-      position: fixed;
-      inset: 0;
-      background: radial-gradient(circle at top, #111827 0, #020617 55%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-    }
-
-    .pin-card {
-      width: 310px;
-      max-width: calc(100% - 40px);
-      background: radial-gradient(circle at top, #1f2937 0, #020617 60%);
-      border-radius: 20px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.9);
-      padding: 18px 18px 16px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .pin-card::before {
-      content: "";
-      position: absolute;
-      inset: -80px -80px auto auto;
-      background: radial-gradient(
-        circle at top right,
-        rgba(212, 175, 55, 0.2),
-        transparent 65%
-      );
-      opacity: 0.8;
-      pointer-events: none;
-    }
-
-    .pin-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      z-index: 1;
-    }
-
-    .pin-title {
-      text-transform: uppercase;
-      letter-spacing: 0.14em;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .pin-server {
-      font-size: 11px;
-      color: var(--accent);
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .pin-server-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 999px;
-      background: #22c55e;
-      box-shadow: 0 0 8px rgba(34, 197, 94, 0.9);
-    }
-
-    .pin-screen {
-      margin-top: 12px;
-      border-radius: 14px;
-      background: rgba(15, 23, 42, 0.95);
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      padding: 10px 12px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .pin-label-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-    }
-
-    .pin-display {
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .pin-dot {
-      flex: 1;
-      height: 32px;
-      border-radius: 999px;
-      border: 1px solid rgba(75, 85, 99, 0.9);
-      background: radial-gradient(circle at top, #020617 0, #020617 55%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      letter-spacing: 0.4em;
-    }
-
-    .pin-dot.filled {
-      background: radial-gradient(circle at top, #1d4ed8 0, #020617 55%);
-      box-shadow: inset 0 0 12px rgba(15, 23, 42, 1),
-        0 0 18px rgba(37, 99, 235, 0.8);
-    }
-
-    .pin-status {
-      margin-top: 6px;
-      font-size: 11px;
-      color: var(--text-muted);
-    }
-
-    .pin-status-error {
-      color: #fecaca;
-    }
-
-    .pin-keypad {
-      margin-top: 10px;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .pin-key {
-      height: 52px;
-      border-radius: 16px;
-      border: 1px solid rgba(55, 65, 81, 0.9);
-      background: radial-gradient(circle at top, #020617 0, #020617 65%);
-      color: #e5e7eb;
-      font-size: 18px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.06s ease, box-shadow 0.06s ease,
-        border-color 0.12s ease;
-    }
-
-    .pin-key::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(
-        circle at top,
-        rgba(56, 189, 248, 0.2),
-        transparent 70%
-      );
-      opacity: 0;
-      transition: opacity 0.15s ease;
-      pointer-events: none;
-    }
-
-    .pin-key:hover {
+      border: 1px solid rgba(255,255,255,.18);
+      box-shadow:none;
+      font-weight:700;
+    }
+    .btn-secondary:hover{background: rgba(255,255,255,.04); color:var(--text-main)}
+    .btn-danger{background:#7f1d1d;color:#fee2e2}
+    .btn-danger:hover{background:#b91c1c}
+    .btn-sm{padding:5px 10px;font-size:11px}
+
+    main{padding:24px;max-width:1200px;margin:0 auto}
+    .grid{display:grid;grid-template-columns: 1.3fr 1fr;gap:20px}
+
+    .card{
+      background:
+        radial-gradient(500px 240px at 25% 0%, rgba(255,45,85,.12), transparent 55%),
+        radial-gradient(500px 240px at 85% 0%, rgba(255,122,144,.10), transparent 55%),
+        rgba(18,16,24,.86);
+      border-radius:18px;
+      padding:18px 18px 16px;
+      border:1px solid rgba(255,255,255,.08);
+      box-shadow: 0 18px 60px rgba(0,0,0,.62);
+      position:relative;
+      overflow:hidden;
+    }
+    .card::before{
+      content:"";
+      position:absolute;inset:0;
+      background: radial-gradient(circle at top right, rgba(255,45,85,.16), transparent 55%);
+      opacity:.7;
+      pointer-events:none;
+    }
+    .card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;position:relative;z-index:1}
+    .card-title{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--text-muted)}
+    .card-subtitle{font-size:11px;color:var(--text-muted);margin-top:4px}
+    .stat-pill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:4px 10px;border-radius:999px;
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.10);
+      font-size:11px;color:var(--text-muted)
+    }
+    .stat-pill span{color:var(--salmon);font-weight:900}
+
+    .separator{margin:12px 0;border-top:1px dashed rgba(255,255,255,.14);position:relative;z-index:1}
+
+    .field-group{display:flex;flex-direction:column;gap:4px;margin-bottom:10px;position:relative;z-index:1}
+    .field-group label{font-size:12px;color:var(--text-muted)}
+    .field-group input,.field-group textarea,.field-group select{
+      background: rgba(0,0,0,.28);
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.12);
+      padding:9px 10px;
+      color:var(--text-main);
+      font-size:13px;
+      resize:vertical;
+      outline:none;
+      transition: border-color .12s ease, box-shadow .12s ease;
+    }
+    .field-group input:focus,.field-group textarea:focus,.field-group select:focus{
+      border-color: rgba(255,45,85,.55);
+      box-shadow: 0 0 0 4px rgba(255,45,85,.14);
+    }
+    input::placeholder,textarea::placeholder{color: rgba(166,162,179,.72)}
+    .field-row{display:flex;gap:10px}
+    .field-row .field-group{flex:1}
+    .text-sm{font-size:12px}
+    .text-xs{font-size:11px}
+    .muted{color:var(--text-muted)}
+
+    .runs-list{
+      margin-top:8px;display:flex;flex-direction:column;gap:8px;
+      max-height:360px;overflow:auto;padding-right:4px;position:relative;z-index:1
+    }
+    .run-item{
+      border-radius:14px;
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.10);
+      padding:10px 10px 8px;
+      display:flex;flex-direction:column;gap:4px;
+    }
+    .run-header{display:flex;justify-content:space-between;align-items:center;font-size:12px}
+    .run-date{color:var(--text-muted);font-size:11px}
+    .run-description{font-size:13px;margin-top:4px}
+    .run-sales{font-size:11px;color:#ffd0d8;margin-top:2px}
+
+    .run-photo-zone{margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+    .run-photo-zone input[type="file"]{font-size:11px;max-width:260px}
+
+    .photos-preview{margin-top:4px;display:flex;flex-wrap:wrap;gap:6px}
+    .photos-preview img{
+      width:52px;height:52px;object-fit:cover;border-radius:10px;
+      border:1px solid rgba(255,122,144,.45);
+      box-shadow: 0 10px 24px rgba(0,0,0,.35);
+    }
+
+    .admin-grid{display:grid;grid-template-columns:1fr 1.2fr;gap:20px}
+    .stats-row{display:flex;gap:10px;margin-top:6px}
+    .stat-card{
+      flex:1;
+      background: rgba(0,0,0,.28);
+      border-radius:14px;
+      padding:9px 10px;
+      border:1px solid rgba(255,255,255,.10);
+      font-size:12px
+    }
+    .stat-label{color:var(--text-muted);font-size:11px}
+    .stat-value{font-size:18px;font-weight:950;color:var(--salmon);letter-spacing:.02em}
+
+    .table{width:100%;border-collapse:collapse;font-size:12px;margin-top:8px}
+    .table th,.table td{padding:6px 8px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .table th{
+      text-align:left;text-transform:uppercase;letter-spacing:.10em;
+      font-size:11px;color:var(--text-muted)
+    }
+    .table tbody tr{cursor:pointer;transition: background .1s ease}
+    .table tbody tr:hover{background: rgba(255,255,255,.03)}
+
+    .pill-role{
+      padding:2px 8px;border-radius:999px;font-size:10px;
+      border:1px solid rgba(255,255,255,.18);
+      text-transform:uppercase;letter-spacing:.10em;
+      background: rgba(0,0,0,.22);
+      color:#ffe1e8;
+    }
+    .pill-role.admin{border-color: rgba(255,45,85,.55); background: rgba(255,45,85,.12)}
+    .pill-role.user,.pill-role.runner,.pill-role.vendeur{border-color: rgba(255,122,144,.42); background: rgba(255,122,144,.08)}
+    .badge-soft{
+      border-radius:999px;padding:2px 8px;font-size:10px;
+      background: rgba(0,0,0,.22);
+      border:1px solid rgba(255,255,255,.10);
+      color:var(--text-muted)
+    }
+
+    .pin-overlay{
+      position:fixed;inset:0;
+      background:
+        radial-gradient(900px 450px at 20% 0%, rgba(255,45,85,.22), transparent 55%),
+        radial-gradient(900px 450px at 80% 0%, rgba(255,122,144,.18), transparent 55%),
+        radial-gradient(circle at top, #171323 0, #07060a 55%);
+      display:flex;align-items:center;justify-content:center;z-index:999
+    }
+    .pin-card{
+      width:320px;max-width:calc(100% - 40px);
+      background:
+        radial-gradient(500px 240px at 25% 0%, rgba(255,45,85,.14), transparent 55%),
+        rgba(10,8,14,.82);
+      border-radius:22px;
+      border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 30px 90px rgba(0,0,0,.85);
+      padding:18px 18px 16px;
+      position:relative;overflow:hidden;
+      backdrop-filter: blur(10px);
+    }
+    .pin-card::before{
+      content:"";
+      position:absolute;inset:-80px -80px auto auto;
+      background: radial-gradient(circle at top right, rgba(255,45,85,.22), transparent 65%);
+      opacity:.9;pointer-events:none
+    }
+    .pin-header{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:1}
+    .pin-title{text-transform:uppercase;letter-spacing:.14em;font-size:11px;color:var(--text-muted)}
+    .pin-server{font-size:11px;color:var(--salmon);display:flex;align-items:center;gap:6px}
+    .pin-server-dot{
+      width:6px;height:6px;border-radius:999px;background:#22c55e;
+      box-shadow:0 0 10px rgba(34,197,94,.9)
+    }
+
+    .pin-screen{
+      margin-top:12px;border-radius:16px;background: rgba(0,0,0,.30);
+      border:1px solid rgba(255,255,255,.12);
+      padding:10px 12px;position:relative;z-index:1
+    }
+    .pin-label-row{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px}
+    .pin-display{display:flex;gap:8px;margin-top:4px}
+    .pin-dot{
+      flex:1;height:32px;border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.30);
+      display:flex;align-items:center;justify-content:center;
+      font-size:18px;letter-spacing:.4em
+    }
+    .pin-dot.filled{
+      background: linear-gradient(180deg, rgba(255,45,85,.35), rgba(0,0,0,.25));
+      box-shadow: inset 0 0 12px rgba(0,0,0,.8), 0 0 18px rgba(255,45,85,.35);
+    }
+    .pin-status{margin-top:6px;font-size:11px;color:var(--text-muted)}
+    .pin-status-error{color:#fecaca}
+
+    .pin-keypad{
+      margin-top:10px;display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:10px;position:relative;z-index:1
+    }
+    .pin-key{
+      height:52px;border-radius:16px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.30);
+      color:#f1f1ff;font-size:18px;font-weight:900;
+      display:flex;align-items:center;justify-content:center;
+      cursor:pointer;position:relative;overflow:hidden;
+      transition: transform .06s ease, box-shadow .08s ease, border-color .12s ease;
+    }
+    .pin-key:hover{
       transform: translateY(-1px);
-      box-shadow: 0 10px 28px rgba(15, 23, 42, 0.9);
-      border-color: rgba(59, 130, 246, 0.8);
+      box-shadow: 0 12px 30px rgba(0,0,0,.55);
+      border-color: rgba(255,45,85,.45);
+    }
+    .pin-key:active{transform: translateY(1px) scale(.985)}
+    .pin-key.action{
+      font-size:12px;text-transform:uppercase;letter-spacing:.12em;
+      color:#bdb8ca;font-weight:800
+    }
+    .pin-footer{
+      margin-top:10px;display:flex;justify-content:space-between;align-items:center;
+      font-size:10px;color:var(--text-muted);position:relative;z-index:1
+    }
+    .pin-footer strong{color:var(--salmon);text-transform:uppercase;letter-spacing:.08em}
+
+    .car-item{
+      background: rgba(0,0,0,.28);
+      border:1px solid rgba(255,255,255,.10);
+      padding:10px;border-radius:14px;
+      display:flex;justify-content:space-between;align-items:center
+    }
+    .car-status{font-size:12px}
+    .car-free{color:#22c55e}
+    .car-taken{color:#ef4444}
+    .car-btn{
+      padding:7px 10px;border-radius:10px;cursor:pointer;
+      background: linear-gradient(135deg, var(--candy), var(--salmon));
+      border:none;color:#120611;font-weight:950;font-size:12px
+    }
+    .car-btn[disabled]{opacity:.5;cursor:not-allowed}
+
+    .tombola-wrap{
+      display:grid;
+      grid-template-columns: 1.15fr .85fr;
+      gap:14px;
+      margin-top:6px;
+    }
+    .drum{
+      border-radius:18px;
+      border:1px solid rgba(255,255,255,.10);
+      background:
+        radial-gradient(260px 140px at 30% 20%, rgba(255,45,85,.20), transparent 60%),
+        radial-gradient(260px 140px at 75% 25%, rgba(255,122,144,.18), transparent 60%),
+        rgba(0,0,0,.24);
+      padding:14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .drum-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .drum-title{
+      font-weight:950;letter-spacing:.10em;text-transform:uppercase;color:#ffd0d8;font-size:12px;
+    }
+    .drum-sub{color:var(--text-muted);font-size:11px;margin-top:4px;line-height:1.4;}
+    .drum-visual{
+      margin-top:12px;height:160px;display:flex;align-items:center;justify-content:center;position:relative;
+    }
+    .drum-circle{
+      width:130px;height:130px;border-radius:999px;border:2px dashed rgba(255,122,144,.45);
+      box-shadow: 0 0 0 10px rgba(255,45,85,.06), 0 0 60px rgba(255,45,85,.18);
+      position:relative;
+      background: radial-gradient(circle at 30% 25%, rgba(255,45,85,.20), rgba(0,0,0,.12));
+      display:flex;align-items:center;justify-content:center;
+      user-select:none;
+    }
+    .drum-circle::after{
+      content:"";position:absolute;inset:14px;border-radius:999px;border:1px solid rgba(255,255,255,.10);
+      background: radial-gradient(circle at 30% 25%, rgba(255,122,144,.18), transparent 60%);
+    }
+    .drum-badge{
+      position:relative; z-index:2;padding:8px 12px;border-radius:999px;border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.28);font-size:11px;color:#ffe6ec;letter-spacing:.10em;text-transform:uppercase;font-weight:950;
+    }
+    .spinning .drum-circle{animation: spin 1.1s linear infinite;border-color: rgba(255,45,85,.7);}
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+
+    .winner-box{
+      margin-top:10px;border-radius:14px;border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.25);padding:10px;
+    }
+    .winner-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.10em}
+    .winner-name{font-size:16px;font-weight:950;color:var(--salmon);margin-top:4px}
+    .winner-meta{font-size:11px;color:#ffd0d8;margin-top:4px}
+
+    .mini-list{
+      max-height:260px;overflow:auto;display:flex;flex-direction:column;gap:8px;padding-right:4px;
+    }
+    .mini-item{
+      border-radius:14px;border:1px solid rgba(255,255,255,.10);background: rgba(0,0,0,.25);padding:10px;
+      display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+    }
+    .mini-item strong{display:block}
+    .mini-meta{font-size:11px;color:var(--text-muted);margin-top:4px}
+    .tag{
+      font-size:10px;border-radius:999px;padding:2px 8px;border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,122,144,.06);color:#ffd0d8;letter-spacing:.10em;text-transform:uppercase;font-weight:900;white-space:nowrap;
     }
 
-    .pin-key:active {
-      transform: translateY(1px) scale(0.98);
-      box-shadow: 0 4px 16px rgba(15, 23, 42, 0.9);
+    .recrutement-card{
+      background: linear-gradient(135deg, rgba(255,45,85,.30), rgba(255,122,144,.18));
+      padding:22px;border-radius:18px;margin-bottom:22px;text-align:center;
+      color:#ffeef2;border:1px solid rgba(255,255,255,.10);
+      box-shadow: 0 16px 50px rgba(0,0,0,.55);
+      position:relative;overflow:hidden;
+    }
+    .recrutement-card::before{
+      content:"";position:absolute;inset:0;background: radial-gradient(circle at 30% 0%, rgba(255,45,85,.35), transparent 55%);
+      opacity:.7;pointer-events:none;
+    }
+    .recrutement-title{
+      position:relative;z-index:1;font-size:28px;font-weight:950;letter-spacing:.14em;text-transform:uppercase;margin:0;
+    }
+    .recrutement-subtitle{
+      position:relative;z-index:1;font-size:13px;margin:10px 0 0;color:rgba(255,238,242,.86);
+      letter-spacing:.16em;text-transform:uppercase;
     }
 
-    .pin-key:active::after {
-      opacity: 1;
-    }
-
-    .pin-key.action {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: #9ca3af;
-    }
-
-    .pin-footer {
-      margin-top: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 10px;
-      color: var(--text-muted);
-      position: relative;
-      z-index: 1;
-    }
-
-    .pin-footer span {
-      opacity: 0.7;
-    }
-
-    .pin-footer strong {
-      color: var(--accent);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-    }
-
-    /* 🏎️ VOITURES */
-    .car-item {
-      background: rgba(15, 23, 42, 0.9);
-      border: 1px solid rgba(51, 65, 85, 0.8);
-      padding: 10px;
-      border-radius: 12px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .car-status {
-      font-size: 12px;
-    }
-
-    .car-free {
-      color: #22c55e;
-    }
-
-    .car-taken {
-      color: #ef4444;
-    }
-
-    .car-btn {
-      padding: 6px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      background: var(--accent-soft);
-      border: none;
-      color: #111;
-      font-weight: bold;
-      font-size: 12px;
-    }
-
-    .car-btn[disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    /* SECTION RECRUTEMENT STYLE AFFICHE */
-    .recrutement-card {
-      background: #b31515;
-      padding: 25px;
-      border-radius: 18px;
-      margin-bottom: 30px;
-      text-align: center;
-      color: #ffe4b3;
-      border: 2px solid #ffcf4d;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.4);
-    }
-
-    .recrutement-title {
-      font-size: 32px;
-      font-weight: 800;
-      letter-spacing: 0.1em;
-    }
-
-    .recrutement-subtitle {
-      font-size: 20px;
-      margin-bottom: 20px;
-      color: #ffe07e;
-      letter-spacing: 0.15em;
-    }
-
-    .recrutement-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 25px;
-    }
-
-    .recrutement-box {
-      background: #fff3d1;
-      border-radius: 14px;
-      padding: 18px;
-      color: #000;
-      border: 2px solid #d49b2d;
-    }
-
-    .recrutement-role {
-      font-size: 22px;
-      font-weight: 900;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-
-    .runner-color {
-      color: #c62828;
-    }
-
-    .vendeur-color {
-      color: #d47c00;
-    }
-
-    .rec-list {
-      text-align: left;
-      padding-left: 10px;
-      margin-bottom: 14px;
-      font-size: 15px;
-    }
-
-    .profil-title {
-      font-weight: 700;
-      margin-bottom: 6px;
-      text-align: left;
-    }
-
-    @media (max-width: 900px) {
-      main {
-        padding: 16px;
-      }
-      .grid,
-      .admin-grid {
-        grid-template-columns: 1fr;
-      }
-      .recrutement-grid {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 900px){
+      main{padding:16px}
+      .grid,.admin-grid{grid-template-columns:1fr}
+      .tombola-wrap{grid-template-columns:1fr}
     }
   </style>
 </head>
+
 <body>
   <!-- OVERLAY PIN -->
   <div id="pin-overlay" class="pin-overlay">
     <div class="pin-card">
       <div class="pin-header">
         <div>
-          <div class="pin-title">Secure Access Panel</div>
-          <div class="text-xs muted">Entrez votre Code PIN pour accéder à votre fiche.</div>
+          <div class="pin-title">Punk Noodles — Secure Access</div>
+          <div class="text-xs muted">Entre ton Code PIN pour accéder au Back Office.</div>
         </div>
         <div class="pin-server">
           <div class="pin-server-dot"></div>
@@ -777,7 +439,7 @@
       <div class="pin-screen">
         <div class="pin-label-row">
           <span>IDENTIFIANT</span>
-          <span class="text-xs">Code PIN &bull; 4 chiffres</span>
+          <span class="text-xs">Code PIN • 4 chiffres</span>
         </div>
         <div class="pin-display">
           <div class="pin-dot" id="pin-dot-0"></div>
@@ -785,9 +447,7 @@
           <div class="pin-dot" id="pin-dot-2"></div>
           <div class="pin-dot" id="pin-dot-3"></div>
         </div>
-        <div id="pin-status" class="pin-status">
-          Codes admin & utilisateur gérés côté base de données (Supabase).
-        </div>
+        <div id="pin-status" class="pin-status">Codes gérés côté base de données (Supabase).</div>
       </div>
 
       <div class="pin-keypad">
@@ -806,84 +466,117 @@
       </div>
 
       <div class="pin-footer">
-        <span>ROLE ADMIN via champ <strong>role = 'admin'</strong> dans la table <strong>users</strong>.</span>
+        <span>Accès selon <strong>role</strong> dans la table <strong>users</strong>.</span>
+        <span><strong>Punk Noodles</strong></span>
       </div>
     </div>
   </div>
 
-  <!-- HEADER (affiché après login) -->
+  <!-- HEADER (après login) -->
   <header id="main-header" class="hidden">
     <div class="title-block">
-      <h1>Run Control Panel</h1>
+      <h1>Punk Noodles — Back Office</h1>
       <span id="header-subtitle">Connecté</span>
     </div>
+
     <div class="user-info-bar">
+      <span id="header-period" class="badge-soft hidden"></span>
       <span id="header-username"></span>
       <span id="header-role" class="role-badge"></span>
       <button class="btn-secondary btn-sm" id="btn-logout">Déconnexion</button>
-  <button onclick="window.location.href='article.html'">article</button>
+      <button class="btn-secondary btn-sm" id="btn-article">Article</button>
+    </div>
   </header>
 
   <main>
-    <!-- SECTION RECRUTEMENT RUNNER & VENDEUR -->
     <section class="recrutement-card">
-      <h1 class="recrutement-title">RECRUTEMENT</h1>
-      <h2 class="recrutement-subtitle">RUNNER & VENDEUR</h2>
+      <h1 class="recrutement-title">Punk Noodles</h1>
+      <h2 class="recrutement-subtitle">Organisation • Ventes • Runs • Tombola (Tambourin)</h2>
+    </section>
 
-      <div class="recrutement-grid">
+    <!-- 🥁 TOMBOLA -->
+    <section id="tombola-section" class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Tambourin (Tombola)</div>
+          <div class="card-subtitle">Plus quelqu’un achète, plus il a de tickets → plus de chances de gagner.</div>
+        </div>
+        <div class="stat-pill">Tickets total: <span id="tombola-total-tickets">0</span></div>
+      </div>
 
-        <!-- RUNNER -->
-        <div class="recrutement-box">
-          <h3 class="recrutement-role runner-color">RUNNER</h3>
+      <div class="tombola-wrap">
+        <div class="drum" id="drum">
+          <div class="drum-head">
+            <div>
+              <div class="drum-title">Tirage pondéré</div>
+              <div class="drum-sub">
+                Chaque <strong>produit acheté = 1 ticket</strong>.<br/>
+                Tirage au sort basé sur le total de tickets.
+              </div>
+            </div>
+            <div class="tag" id="tombola-mode-tag">Lecture</div>
+          </div>
 
-          <ul class="rec-list">
-            <li>📌 <strong>Quotas :</strong> 3 runs par semaine minimum</li>
-            <li>💵 <strong>Run speedo :</strong> 100K + 30K prime</li>
-          </ul>
+          <div class="drum-visual">
+            <div class="drum-circle">
+              <div class="drum-badge">PUNK • NOODLES</div>
+            </div>
+          </div>
 
-          <h4 class="profil-title">Profil recherché :</h4>
-          <ul class="rec-list">
-            <li>✔ Disponible</li>
-            <li>✔ Motivé</li>
-          </ul>
+          <div class="field-row" id="tombola-admin-form" style="margin-top:10px;">
+            <div class="field-group">
+              <label>Nom / Pseudo</label>
+              <input id="tombola-name" type="text" placeholder="Ex: Rico" />
+            </div>
+            <div class="field-group">
+              <label>Contact (optionnel)</label>
+              <input id="tombola-contact" type="text" placeholder="Ex: +32..." />
+            </div>
+            <div class="field-group">
+              <label>Produits achetés</label>
+              <input id="tombola-products" type="number" min="1" value="1" />
+            </div>
+          </div>
+
+          <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:6px;">
+            <button class="btn" id="btn-tombola-add" style="display:none;">Inscrire</button>
+            <button class="btn-secondary btn-sm" id="btn-tombola-refresh">Rafraîchir</button>
+            <button class="btn" id="btn-tombola-draw" style="display:none;">TIRER AU SORT</button>
+          </div>
+
+          <div class="winner-box">
+            <div class="winner-label">Dernier gagnant</div>
+            <div class="winner-name" id="tombola-winner-name">—</div>
+            <div class="winner-meta" id="tombola-winner-meta">—</div>
+          </div>
+
+          <div class="separator"></div>
+
+          <div class="card-title" style="margin-bottom:6px;">Historique des tirages</div>
+          <div class="mini-list" id="tombola-draws"></div>
         </div>
 
-        <!-- VENDEUR -->
-        <div class="recrutement-box">
-          <h3 class="recrutement-role vendeur-color">VENDEUR</h3>
-
-          <ul class="rec-list">
-            <li>📌 <strong>Quotas :</strong> 4 heures par semaine minimum</li>
-            <li>💰 <strong>Commission :</strong> 15 % par facture</li>
-            <li>🌙 <strong>Bonus :</strong> Heure du soir payée en plus</li>
-          </ul>
-
-          <h4 class="profil-title">Profil recherché :</h4>
-          <ul class="rec-list">
-            <li>✔ Disponible</li>
-            <li>✔ Motivé</li>
-          </ul>
+        <div>
+          <div class="card-title">Participants</div>
+          <div class="card-subtitle">Tickets = produits achetés.</div>
+          <div class="runs-list" id="tombola-participants" style="max-height:420px;"></div>
         </div>
-
       </div>
     </section>
 
-    <!-- 🏎️ SECTION VOITURES (VISIBLE POUR TOUS LES RÔLES CONNECTÉS) -->
-    <section id="cars-section" class="card">
+    <!-- 🏎️ VOITURES -->
+    <section id="cars-section" class="card" style="margin-top:22px;">
       <div class="card-header">
         <div>
           <div class="card-title">Véhicules disponibles</div>
           <div class="card-subtitle">Liste des voitures & état (disponible / prise).</div>
         </div>
       </div>
-
-      <div id="cars-list" class="runs-list">
-        <!-- Rempli en JS -->
-      </div>
+      <div id="cars-list" class="runs-list"></div>
     </section>
 
     <!-- SECTION UTILISATEUR -->
-    <section id="user-section" class="hidden">
+    <section id="user-section" class="hidden" style="margin-top:22px;">
       <div class="grid">
         <!-- FICHE UTILISATEUR -->
         <div class="card">
@@ -922,6 +615,48 @@
               <div id="user-photos-count" class="stat-value">0</div>
             </div>
           </div>
+
+          <div id="runner-weekly-panel" class="hidden">
+            <div class="separator"></div>
+            <div class="card-title" style="margin-bottom:6px;">Prime & grade (semaine)</div>
+            <div class="stats-row" style="margin-top:6px;">
+              <div class="stat-card">
+                <div class="stat-label">Runs (7 derniers jours)</div>
+                <div id="user-weekly-runs" class="stat-value">0</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Grade semaine</div>
+                <div id="user-weekly-grade" class="stat-value">—</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Prime semaine</div>
+                <div id="user-weekly-bonus" class="stat-value">$0.00</div>
+              </div>
+            </div>
+<p class="text-xs muted" style="margin-top:6px;">
+  Règle: <strong>&ge; 4 runs</strong> = Silver I • <strong>&ge; 6 runs</strong> = Silver II (depuis la réinitialisation).
+</p>
+          </div>
+
+          <div id="vendor-commission-panel" class="hidden">
+            <div class="separator"></div>
+            <div class="card-title" style="margin-bottom:6px;">Gains vendeur</div>
+            <div class="stats-row" style="margin-top:6px;">
+              <div class="stat-card">
+                <div class="stat-label">Commission</div>
+                <div id="user-commission-percent" class="stat-value">0%</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Ventes ($ reçus)</div>
+                <div id="user-vendor-ventes-sum" class="stat-value">$0.00</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Gain</div>
+                <div id="user-commission-earnings" class="stat-value">$0.00</div>
+              </div>
+            </div>
+            <p class="text-xs muted" style="margin-top:6px;">Gain = ventes × commission (%). La commission se règle côté Admin.</p>
+          </div>
         </div>
 
         <!-- NOUVEAU RUN -->
@@ -929,9 +664,7 @@
           <div class="card-header">
             <div>
               <div class="card-title">Ajouter un run</div>
-              <div class="card-subtitle">
-                Déclare un nouveau run + ce qui a été vendu.
-              </div>
+              <div class="card-subtitle">Déclare un nouveau run + $ reçus.</div>
             </div>
           </div>
 
@@ -943,42 +676,31 @@
           <div class="field-row">
             <div class="field-group">
               <label>Ce qui a été vendu (description)</label>
-              <input
-                id="run-sales-desc"
-                type="text"
-                placeholder="Ex: 3 packs, 2 boîtes..."
-              />
+              <input id="run-sales-desc" type="text" placeholder="Ex: 3 packs, 2 boîtes..." />
             </div>
             <div class="field-group">
-              <label>Montant total (€)</label>
-              <input
-                id="run-sales-amount"
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Ex: 250"
-              />
+              <label>Montant total ($ reçus)</label>
+              <input id="run-sales-amount" type="number" step="0.01" min="0" placeholder="Ex: 250" />
             </div>
           </div>
 
+          <!-- ✅ RUN PHOTO: 1 min / 2 max -->
           <div class="field-group">
-            <label>Photo du run (optionnel)</label>
-            <input type="file" id="run-photo" accept="image/*" />
+            <label>Photos du run (OBLIGATOIRE • 1 à 2)</label>
+            <input type="file" id="run-photo" accept="image/*" multiple />
+            <div class="text-xs muted" style="margin-top:4px;">Minimum 1 photo, maximum 2. (preuve / stock / produits)</div>
           </div>
 
-          <button class="btn" id="btn-add-run">Enregistrer le run + Photo</button>
-          <p class="text-xs muted" style="margin-top: 6px;">
-            Après avoir enregistré, tu pourras ajouter des photos sur ce run (preuve / stock / produits vendus, etc.).
-          </p>
+          <button class="btn" id="btn-add-run">Enregistrer le run + Photos</button>
         </div>
       </div>
 
-      <!-- PANEL VENDEUR (si role = vendeur) -->
+      <!-- PANEL VENDEUR -->
       <div id="vendeur-panel" class="card hidden" style="margin-top:20px;">
         <div class="card-header">
           <div>
             <div class="card-title">Ajouter une vente</div>
-            <div class="card-subtitle">Encode ce que tu as vendu + prix + photo</div>
+            <div class="card-subtitle">Encode ce que tu as vendu + $ reçus + photo</div>
           </div>
         </div>
 
@@ -994,7 +716,7 @@
           </div>
 
           <div class="field-group">
-            <label>Montant (€)</label>
+            <label>Montant ($ reçus)</label>
             <input type="number" id="vente-price" placeholder="Ex : 150" />
           </div>
         </div>
@@ -1015,39 +737,110 @@
             <div class="card-subtitle">Historique de tout ce que tu as vendu</div>
           </div>
         </div>
-
         <div id="ventes-list" class="runs-list"></div>
       </div>
 
-      <!-- LISTE DES RUNS UTILISATEUR -->
+      <!-- 💸 COMPTABILITÉ (UTILISATEUR) -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Comptabilité</div>
+            <div class="card-subtitle">Note tes achats (matière première) + dépenses. Calcul automatique du chiffre d’affaires.</div>
+          </div>
+          <div class="stat-pill">CA: <span id="user-ca-sum">$0.00</span></div>
+        </div>
+
+        <div class="stats-row" style="margin-top:6px;">
+          <div class="stat-card">
+            <div class="stat-label">Runs ($ reçus)</div>
+            <div id="user-runs-sum" class="stat-value">$0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ventes ($ reçus)</div>
+            <div id="user-ventes-sum" class="stat-value">$0.00</div>
+          </div>
+        </div>
+
+        <div class="stats-row" style="margin-top:6px;">
+          <div class="stat-card">
+            <div class="stat-label">Achats matière première</div>
+            <div id="user-purchases-sum" class="stat-value">$0.00</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Résultat brut (CA - achats)</div>
+            <div id="user-gross-sum" class="stat-value">$0.00</div>
+          </div>
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Type</label>
+            <select id="txu-type">
+              <option value="purchase">Achat (matière première)</option>
+              <option value="expense">Dépense</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Catégorie</label>
+            <select id="txu-category">
+              <option value="matiere_premiere">Matière première</option>
+              <option value="loyer">Loyer</option>
+              <option value="essence">Essence</option>
+              <option value="salaire">Salaire</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Description</label>
+            <input id="txu-desc" type="text" placeholder="Ex: Farine, Nouilles, emballage..." />
+          </div>
+          <div class="field-group">
+            <label>Montant ($)</label>
+            <input id="txu-amount" type="number" step="0.01" min="0" placeholder="Ex: 120" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Photo (optionnel)</label>
+          <input type="file" id="txu-photo" accept="image/*" />
+        </div>
+
+        <button class="btn" id="btn-add-txu">Enregistrer</button>
+        <p class="text-xs muted" style="margin-top:6px;">Le CA = total des $ reçus (ventes + runs). Le résultat brut = CA - achats matière première.</p>
+
+        <div class="separator"></div>
+
+        <div class="card-title" style="margin-bottom:6px;">Historique (mes achats & dépenses)</div>
+        <div id="user-transactions-list" class="runs-list"></div>
+      </div>
+
+      <!-- LISTE DES RUNS -->
       <div class="card" style="margin-top: 22px;">
         <div class="card-header">
           <div>
             <div class="card-title">Mes runs</div>
-            <div class="card-subtitle">
-              Historique des runs + photos associées.
-            </div>
+            <div class="card-subtitle">Historique des runs + photos associées.</div>
           </div>
-          <div class="stat-pill">
-            Total runs: <span id="user-runs-count-pill">0</span>
-          </div>
+          <div class="stat-pill">Total runs: <span id="user-runs-count-pill">0</span></div>
         </div>
-
-        <div id="user-runs-list" class="runs-list">
-          <!-- Runs générés en JS -->
-        </div>
+        <div id="user-runs-list" class="runs-list"></div>
       </div>
     </section>
 
     <!-- SECTION ADMIN -->
-    <section id="admin-section" class="hidden">
+    <section id="admin-section" class="hidden" style="margin-top:22px;">
       <div class="admin-grid">
-        <!-- Stats globales -->
+        <!-- Stats -->
         <div class="card">
           <div class="card-header">
             <div>
               <div class="card-title">Dashboard Admin</div>
-              <div class="card-subtitle">Vue d'ensemble des comptes & activité.</div>
+              <div class="card-subtitle">Vue d'ensemble des comptes & activité (période semaine).</div>
             </div>
             <span class="badge-soft">Mode Admin</span>
           </div>
@@ -1069,31 +862,48 @@
               <div id="admin-photos-count" class="stat-value">0</div>
             </div>
             <div class="stat-card">
-              <div class="stat-label">Montant total ventes (€)</div>
-              <div id="admin-sales-sum" class="stat-value">0</div>
+              <div class="stat-label">Runs ($ reçus)</div>
+              <div id="admin-runs-sum" class="stat-value">$0.00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Ventes ($ reçus)</div>
+              <div id="admin-ventes-sum" class="stat-value">$0.00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Total CA ($ reçus)</div>
+              <div id="admin-sales-sum" class="stat-value">$0.00</div>
+            </div>
+          </div>
+
+          <div class="stats-row" style="margin-top: 12px;">
+            <div class="stat-card">
+              <div class="stat-label">Achats matière première</div>
+              <div id="admin-purchases-sum" class="stat-value">$0.00</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">Résultat brut (CA - achats)</div>
+              <div id="admin-gross-sum" class="stat-value">$0.00</div>
             </div>
           </div>
 
           <p class="text-xs muted" style="margin-top: 10px;">
-            Les ventes sont calculées depuis la table <strong>ventes</strong> (amount).
+            CA = somme des <strong>ventes</strong> + <strong>runs</strong> ($ reçus) depuis <strong>week_start</strong>.
           </p>
         </div>
 
-        <!-- Création / édition de compte -->
+        <!-- Gestion comptes -->
         <div class="card">
           <div class="card-header">
             <div>
               <div class="card-title">Gestion des comptes</div>
-              <div class="card-subtitle">
-                Crée ou modifie rapidement un utilisateur (Code PIN dédié).
-              </div>
+              <div class="card-subtitle">Crée ou modifie un utilisateur (Code PIN).</div>
             </div>
           </div>
 
           <div class="field-row">
             <div class="field-group">
               <label>Nom / Pseudo</label>
-              <input id="admin-user-name" type="text" placeholder="Ex: Logan, Rico, etc." />
+              <input id="admin-user-name" type="text" placeholder="Ex: Logan, Rico..." />
             </div>
             <div class="field-group">
               <label>Code PIN (4 chiffres)</label>
@@ -1113,31 +923,116 @@
             </div>
           </div>
 
-          <div style="margin-top: 8px; display: flex; gap: 8px;">
-            <button class="btn" id="btn-admin-save-user">Sauvegarder / Créer</button>
-            <button class="btn-danger btn-sm hidden" id="btn-admin-delete-user">
-              Supprimer l'utilisateur sélectionné
-            </button>
+          <div class="field-row" id="vendor-commission-row" style="display:none;">
+            <div class="field-group">
+              <label>Commission vendeur (%)</label>
+              <input id="admin-user-commission" type="number" step="0.01" min="0" max="100" placeholder="Ex: 15" />
+            </div>
           </div>
+
+          <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap:wrap;">
+            <button class="btn" id="btn-admin-save-user">Sauvegarder / Créer</button>
+            <button class="btn-danger btn-sm hidden" id="btn-admin-delete-user">Supprimer l'utilisateur</button>
+          </div>
+
           <p class="text-xs muted" style="margin-top: 6px;">
-            Quand tu cliques sur un utilisateur dans la liste à gauche, il se charge ici
-            pour édition / suppression.
+            Clique sur un utilisateur dans la liste pour le charger ici.
           </p>
         </div>
       </div>
 
-      <!-- Liste utilisateurs + détails -->
+      <!-- ✅ FIN DE SEMAINE / PDF -->
+      <div class="card" style="margin-top:22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Fin de semaine</div>
+            <div class="card-subtitle">Exporter le PDF + réinitialiser la période (sans supprimer l’historique).</div>
+          </div>
+          <span class="badge-soft" id="admin-week-range">—</span>
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" id="btn-export-week-pdf">Exporter PDF semaine</button>
+          <button class="btn-danger btn-sm" id="btn-close-week">Clôturer / Réinitialiser la semaine</button>
+          <button class="btn-secondary btn-sm" id="btn-refresh-reports">Rafraîchir rapports</button>
+        </div>
+
+        <div class="separator"></div>
+        <div class="card-title" style="margin-bottom:6px;">Rapports enregistrés</div>
+        <div id="admin-reports-list" class="runs-list" style="max-height:260px;"></div>
+
+        <p class="text-xs muted" style="margin-top:10px;">
+          Le PDF est aussi upload dans Storage bucket <strong>weekly-reports</strong> et enregistré dans table <strong>weekly_reports</strong>.
+        </p>
+      </div>
+
+      <!-- 💸 COMPTABILITÉ (ADMIN) -->
+      <div class="card" style="margin-top: 22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Comptabilité — Achats & Dépenses</div>
+            <div class="card-subtitle">Ajoute les achats (matière première) + dépenses de l’entreprise.</div>
+          </div>
+          <span class="badge-soft">Entreprise</span>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Type</label>
+            <select id="txa-type">
+              <option value="purchase">Achat (matière première)</option>
+              <option value="expense">Dépense</option>
+            </select>
+          </div>
+          <div class="field-group">
+            <label>Catégorie</label>
+            <select id="txa-category">
+              <option value="matiere_premiere">Matière première</option>
+              <option value="loyer">Loyer</option>
+              <option value="essence">Essence</option>
+              <option value="salaire">Salaire</option>
+              <option value="autre">Autre</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field-group">
+            <label>Description</label>
+            <input id="txa-desc" type="text" placeholder="Ex: Nouilles, épices, cartons..." />
+          </div>
+          <div class="field-group">
+            <label>Montant ($)</label>
+            <input id="txa-amount" type="number" step="0.01" min="0" placeholder="Ex: 250" />
+          </div>
+        </div>
+
+        <div class="field-group">
+          <label>Photo (optionnel)</label>
+          <input type="file" id="txa-photo" accept="image/*" />
+        </div>
+
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button class="btn" id="btn-add-txa">Enregistrer</button>
+          <button class="btn-secondary btn-sm" id="btn-refresh-txa">Rafraîchir</button>
+        </div>
+
+        <div class="separator"></div>
+
+        <div class="card-title" style="margin-bottom:6px;">Historique (entreprise)</div>
+        <div id="admin-transactions-list" class="runs-list" style="max-height:360px;"></div>
+      </div>
+
+      <!-- Users + détails -->
       <div class="card" style="margin-top: 22px;">
         <div class="card-header">
           <div>
             <div class="card-title">Utilisateurs & activité</div>
-            <div class="card-subtitle">
-              Clique sur un utilisateur pour voir ses runs & stats.
-            </div>
+            <div class="card-subtitle">Clique sur un utilisateur pour voir ses runs & stats (période semaine).</div>
           </div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1.1fr 1.3fr; gap: 20px;">
+        <div style="display:grid; grid-template-columns: 1.1fr 1.3fr; gap:20px;">
           <div>
             <table class="table" id="admin-users-table">
               <thead>
@@ -1148,35 +1043,81 @@
                   <th>Runs</th>
                 </tr>
               </thead>
-              <tbody>
-                <!-- Lignes générées JS -->
-              </tbody>
+              <tbody></tbody>
             </table>
           </div>
 
           <div>
             <div class="field-group">
               <label>Utilisateur sélectionné</label>
-              <div id="admin-selected-user" class="text-sm muted">
-                Aucun utilisateur sélectionné.
-              </div>
+              <div id="admin-selected-user" class="text-sm muted">Aucun utilisateur sélectionné.</div>
             </div>
             <div class="separator"></div>
-            <div id="admin-selected-runs" class="runs-list" style="max-height: 260px;">
-              <!-- Runs utilisateur sélectionné -->
-            </div>
+            <div id="admin-selected-runs" class="runs-list" style="max-height:260px;"></div>
           </div>
         </div>
       </div>
 
-      <!-- VENTES (ADMIN) -->
+      <!-- 🏅 RUNNERS — PRIMES SEMAINE -->
+      <div class="card" style="margin-top: 22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Runners — primes & grades</div>
+<div class="card-subtitle">Calcul sur la période (depuis week_start) : prime si &ge;4 runs / &ge;6 runs.</div>
+          </div>
+          <button class="btn-secondary btn-sm" id="btn-refresh-bonus">Rafraîchir</button>
+        </div>
+
+        <div style="max-height: 360px; overflow:auto;">
+          <table class="table" id="admin-runners-bonus-table">
+            <thead>
+              <tr>
+                <th>Runner</th>
+                <th>Runs (7j)</th>
+                <th>Grade</th>
+                <th>Prime</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <p class="text-xs muted" style="margin-top: 10px;">
+          Par défaut la prime est à $0.00 (modifiable dans le code JS).
+        </p>
+      </div>
+
+      <!-- 💰 VENDEURS — COMMISSIONS -->
+      <div class="card" style="margin-top: 22px;">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Vendeurs — commissions</div>
+            <div class="card-subtitle">Calcul automatique: ventes × commission (%)</div>
+          </div>
+          <button class="btn-secondary btn-sm" id="btn-refresh-commissions">Rafraîchir</button>
+        </div>
+
+        <div style="max-height: 360px; overflow:auto;">
+          <table class="table" id="admin-vendors-commission-table">
+            <thead>
+              <tr>
+                <th>Vendeur</th>
+                <th>Commission</th>
+                <th>Ventes ($ reçus)</th>
+                <th>Gain</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- VENTES admin -->
       <div class="card" style="margin-top: 22px;">
         <div class="card-header">
           <div>
             <div class="card-title">Ventes (tous vendeurs)</div>
-            <div class="card-subtitle">
-              Vue globale des ventes enregistrées par les vendeurs.
-            </div>
+            <div class="card-subtitle">Vue globale des ventes enregistrées (période semaine).</div>
           </div>
         </div>
 
@@ -1188,14 +1129,12 @@
                 <th>Vendeur</th>
                 <th>Description</th>
                 <th>Qté</th>
-                <th>Montant (€)</th>
+                <th>$ reçus</th>
                 <th>Date</th>
                 <th>Photo</th>
               </tr>
             </thead>
-            <tbody>
-              <!-- Ventes générées JS -->
-            </tbody>
+            <tbody></tbody>
           </table>
         </div>
       </div>
@@ -1203,7 +1142,7 @@
   </main>
 
   <script>
-    // ⚙️ CONFIG SUPABASE — À REMPLACER SI BESOIN
+    // ⚙️ CONFIG SUPABASE
     const SUPABASE_URL = "https://ldhxyloqdtplevdkgnah.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxkaHh5bG9xZHRwbGV2ZGtnbmFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMTg5NjAsImV4cCI6MjA3Njc5NDk2MH0.pnoppZtVEP3uDrMEfauPAMMB93EmGO5Ur1pg4OY99-o";
     const supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1212,10 +1151,81 @@
     let currentUser = null;
     let currentRole = null; // 'user' | 'admin' | 'runner' | 'vendeur'
     let adminSelectedUserId = null;
-    let adminUsersCache = {}; // id -> user (pour les ventes admin)
+    let adminUsersCache = {};
 
-    // Gestion du PIN
+    // PIN
     let pinValue = "";
+
+    // ✅ SEMAINE (période) stockée en base
+    let WEEK_START_ISO = null; // ex: "2025-12-16T00:00:00.000Z"
+    function fmtUSD(value){
+      const n = Number(value || 0);
+      try {
+        return new Intl.NumberFormat("en-US", { style:"currency", currency:"USD" }).format(n);
+      } catch (e) {
+        return "$" + n.toFixed(2);
+      }
+    }
+    function escapeHtml(s){
+      return String(s ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
+    function toFr(dt){
+      try { return new Date(dt).toLocaleString("fr-FR"); } catch(e){ return String(dt); }
+    }
+    function getDefaultWeekStartISO(){
+      // Lundi 00:00 local
+      const now = new Date();
+      const d = new Date(now);
+      const day = d.getDay(); // 0 dimanche.. 1 lundi..
+      const diff = (day === 0 ? 6 : day - 1);
+      d.setDate(d.getDate() - diff);
+      d.setHours(0,0,0,0);
+      return d.toISOString();
+    }
+    async function loadWeekStart(){
+      const fallback = getDefaultWeekStartISO();
+      try{
+        const { data, error } = await supa.from("app_settings").select("*").eq("key","week_start").maybeSingle();
+        if (error) {
+          console.error(error);
+          WEEK_START_ISO = fallback;
+          return;
+        }
+        if (!data) {
+          const ins = await supa.from("app_settings").insert({ key:"week_start", value:fallback });
+          if (ins.error) console.error(ins.error);
+          WEEK_START_ISO = fallback;
+          return;
+        }
+        WEEK_START_ISO = data.value || fallback;
+      } catch(e){
+        console.error(e);
+        WEEK_START_ISO = fallback;
+      }
+    }
+    function sinceISO(){
+      return WEEK_START_ISO || getDefaultWeekStartISO();
+    }
+    function updateHeaderPeriod(){
+      const el = document.getElementById("header-period");
+      if (!el) return;
+      if (!WEEK_START_ISO) { el.classList.add("hidden"); return; }
+      el.classList.remove("hidden");
+      el.textContent = "Période: " + new Date(WEEK_START_ISO).toLocaleDateString("fr-FR");
+      const adminRange = document.getElementById("admin-week-range");
+      if (adminRange) adminRange.textContent = "Depuis " + new Date(WEEK_START_ISO).toLocaleDateString("fr-FR");
+    }
+
+    // 💎 RÈGLES "GRADE / PRIME" RUNNER (7 derniers jours)
+    const BONUS_TIER1_RUNS = 4;
+    const BONUS_TIER2_RUNS = 6;
+    const BONUS_TIER1_AMOUNT = 30000;
+    const BONUS_TIER2_AMOUNT = 40000;
 
     function updatePinDots() {
       for (let i = 0; i < 4; i++) {
@@ -1230,31 +1240,22 @@
         }
       }
     }
-
     function setPinStatus(message, isError = false) {
       const el = document.getElementById("pin-status");
       if (!el) return;
       el.textContent = message;
-      if (isError) {
-        el.classList.add("pin-status-error");
-      } else {
-        el.classList.remove("pin-status-error");
-      }
+      if (isError) el.classList.add("pin-status-error");
+      else el.classList.remove("pin-status-error");
     }
-
     function appendDigit(digit) {
       if (pinValue.length >= 4) return;
       pinValue += digit;
       updatePinDots();
     }
-
     function clearPin() {
       pinValue = "";
       updatePinDots();
-      setPinStatus(
-        "Codes admin & utilisateur gérés côté base de données (Supabase).",
-        false
-      );
+      setPinStatus("Codes gérés côté base de données (Supabase).", false);
     }
 
     async function validatePin() {
@@ -1262,8 +1263,7 @@
         setPinStatus("Le Code PIN doit contenir 4 chiffres.", true);
         return;
       }
-
-      setPinStatus("Vérification du Code PIN en cours...", false);
+      setPinStatus("Vérification du Code PIN...", false);
 
       try {
         const { data, error } = await supa
@@ -1277,59 +1277,51 @@
           setPinStatus("Erreur de connexion à la base. Vérifie Supabase.", true);
           return;
         }
-
         if (!data) {
           setPinStatus("Code PIN incorrect ou inconnu.", true);
           clearPin();
           return;
         }
 
-        // On a un utilisateur
         currentUser = data;
         currentRole = data.role || "user";
+
+        // ✅ charge week_start
+        await loadWeekStart();
+        updateHeaderPeriod();
 
         document.getElementById("pin-overlay").classList.add("hidden");
         document.getElementById("main-header").classList.remove("hidden");
 
         document.getElementById("header-username").textContent =
-          data.username || "Utilisateur #" + data.id;
+          data.username || ("Utilisateur #" + data.id);
 
         let roleLabel;
         switch (currentRole) {
-          case "admin":
-            roleLabel = "Admin";
-            break;
-          case "runner":
-            roleLabel = "Runner";
-            break;
-          case "vendeur":
-            roleLabel = "Vendeur";
-            break;
-          default:
-            roleLabel = "Utilisateur";
+          case "admin": roleLabel = "Admin"; break;
+          case "runner": roleLabel = "Runner"; break;
+          case "vendeur": roleLabel = "Vendeur"; break;
+          default: roleLabel = "Utilisateur";
         }
-        const roleEl = document.getElementById("header-role");
-        roleEl.textContent = roleLabel;
+        document.getElementById("header-role").textContent = roleLabel;
 
-        const subtitle = currentRole === "admin"
-          ? "Connecté en mode administrateur."
-          : "Connecté sur ta fiche personnelle.";
+        document.getElementById("header-subtitle").textContent =
+          currentRole === "admin" ? "Connecté en mode administrateur." : "Connecté sur ta fiche personnelle.";
 
-        document.getElementById("header-subtitle").textContent = subtitle;
+        setupTombolaMode();
 
         if (currentRole === "admin") {
           document.getElementById("admin-section").classList.remove("hidden");
           document.getElementById("user-section").classList.add("hidden");
           await loadAdminDashboard();
-          await loadCars(); // chargement des voitures pour admin
+          await loadCars();
+          await loadAdminTransactions();
+          await loadReports();
         } else {
           document.getElementById("user-section").classList.remove("hidden");
           document.getElementById("admin-section").classList.add("hidden");
-
-          // roles user / runner / vendeur utilisent le dashboard utilisateur
           await loadUserDashboard();
 
-          // Si vendeur : afficher panneau + ventes
           if (currentRole === "vendeur") {
             document.getElementById("vendeur-panel").classList.remove("hidden");
             document.getElementById("liste-ventes").classList.remove("hidden");
@@ -1339,8 +1331,13 @@
             document.getElementById("liste-ventes").classList.add("hidden");
           }
 
-          await loadCars(); // chargement des voitures pour tous les autres rôles
+          await loadCars();
+          await loadUserTransactions();
+          await refreshUserFinance();
         }
+
+        await loadTombola();
+
       } catch (err) {
         console.error(err);
         setPinStatus("Erreur inconnue. Regarde la console.", true);
@@ -1348,158 +1345,100 @@
     }
 
     function setupPinPad() {
-      const digitButtons = document.querySelectorAll(".pin-key[data-digit]");
-      digitButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-          appendDigit(btn.dataset.digit);
-        });
+      document.querySelectorAll(".pin-key[data-digit]").forEach((btn) => {
+        btn.addEventListener("click", () => appendDigit(btn.dataset.digit));
       });
-
-      const clearBtn = document.getElementById("pin-clear");
-      if (clearBtn) clearBtn.addEventListener("click", clearPin);
-
-      const validateBtn = document.getElementById("pin-validate");
-      if (validateBtn) validateBtn.addEventListener("click", validatePin);
+      document.getElementById("pin-clear")?.addEventListener("click", clearPin);
+      document.getElementById("pin-validate")?.addEventListener("click", validatePin);
     }
 
     // ---------------------------------------
-    // 🏎️ GESTION DES VOITURES (VISIBLE POUR TOUS)
+    // 🏎️ VOITURES
     // ---------------------------------------
     async function loadCars() {
       if (!currentUser) return;
 
-      const { data: cars, error } = await supa
-        .from("cars")
-        .select("*")
-        .order("id", { ascending: true });
-
-      if (error) {
-        console.error(error);
-        return;
-      }
+      const { data: cars, error } = await supa.from("cars").select("*").order("id", { ascending: true });
+      if (error) { console.error(error); return; }
 
       const list = document.getElementById("cars-list");
       list.innerHTML = "";
 
       if (!cars || cars.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "text-sm muted";
-        empty.textContent = "Aucune voiture enregistrée pour le moment.";
-        list.appendChild(empty);
+        list.innerHTML = "<div class='text-sm muted'>Aucune voiture enregistrée.</div>";
         return;
       }
 
       cars.forEach((car) => {
         const isTaken = car.is_taken;
-        const statusText = isTaken
-          ? `Pris par utilisateur #${car.taken_by}`
-          : "Disponible";
-
+        const statusText = isTaken ? ("Pris par utilisateur #" + car.taken_by) : "Disponible";
         const statusClass = isTaken ? "car-taken" : "car-free";
-
-        const btnLabel = isTaken
-          ? (car.taken_by === currentUser.id ? "Libérer" : "Indisponible")
-          : "Prendre";
-
+        const btnLabel = isTaken ? (car.taken_by === currentUser.id ? "Libérer" : "Indisponible") : "Prendre";
         const disabled = isTaken && car.taken_by !== currentUser.id;
 
         const div = document.createElement("div");
         div.className = "car-item";
-
         div.innerHTML = `
           <div>
-            <strong>${car.name}</strong><br>
-            <span class="car-status ${statusClass}">${statusText}</span>
+            <strong>${escapeHtml(car.name)}</strong><br>
+            <span class="car-status ${statusClass}">${escapeHtml(statusText)}</span>
           </div>
-          <button class="car-btn" data-id="${car.id}" ${disabled ? "disabled" : ""}>
-            ${btnLabel}
-          </button>
+          <button class="car-btn" data-id="${car.id}" ${disabled ? "disabled" : ""}>${escapeHtml(btnLabel)}</button>
         `;
-
         list.appendChild(div);
       });
 
-      // Attach events
       document.querySelectorAll(".car-btn").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const carId = btn.dataset.id;
-          const { data: carData, error: carErr } = await supa
-            .from("cars")
-            .select("*")
-            .eq("id", carId)
-            .maybeSingle();
-
-          if (carErr || !carData) {
-            console.error(carErr);
-            return;
-          }
+          const { data: carData, error: carErr } = await supa.from("cars").select("*").eq("id", carId).maybeSingle();
+          if (carErr || !carData) { console.error(carErr); return; }
 
           if (!carData.is_taken) {
-            // Prendre voiture
-            const { error: updErr } = await supa
-              .from("cars")
-              .update({
-                is_taken: true,
-                taken_by: currentUser.id,
-              })
-              .eq("id", carData.id);
-            if (updErr) {
-              console.error(updErr);
-            }
+            const { error: updErr } = await supa.from("cars").update({ is_taken: true, taken_by: currentUser.id }).eq("id", carData.id);
+            if (updErr) console.error(updErr);
           } else if (carData.taken_by === currentUser.id) {
-            // Libérer voiture (seulement si prise par l'utilisateur courant)
-            const { error: updErr } = await supa
-              .from("cars")
-              .update({
-                is_taken: false,
-                taken_by: null,
-              })
-              .eq("id", carData.id);
-            if (updErr) {
-              console.error(updErr);
-            }
+            const { error: updErr } = await supa.from("cars").update({ is_taken: false, taken_by: null }).eq("id", carData.id);
+            if (updErr) console.error(updErr);
           }
-
           await loadCars();
         });
       });
     }
 
+    async function releaseAllCars(){
+      const { error } = await supa.from("cars").update({ is_taken:false, taken_by:null }).neq("id", -1);
+      if (error) console.error(error);
+    }
+
     // ---------------------------------------
-    // SECTION UTILISATEUR
+    // UTILISATEUR
     // ---------------------------------------
     async function loadUserDashboard() {
       if (!currentUser) return;
 
-      // Remplir fiche utilisateur
-      document.getElementById("user-name").textContent =
-        currentUser.username || "Utilisateur #" + currentUser.id;
+      document.getElementById("user-name").textContent = currentUser.username || ("Utilisateur #" + currentUser.id);
       document.getElementById("user-pin").textContent = currentUser.pin_code;
       document.getElementById("user-created").textContent =
-        currentUser.created_at
-          ? new Date(currentUser.created_at).toLocaleString("fr-FR")
-          : "-";
+        currentUser.created_at ? new Date(currentUser.created_at).toLocaleString("fr-FR") : "-";
 
       await refreshUserRunsAndPhotos();
     }
 
+    // ✅ photos max par run
+    const MAX_RUN_PHOTOS = 2;
+
     async function refreshUserRunsAndPhotos() {
       if (!currentUser) return;
 
-      const userId = currentUser.id;
-
       const { data: runs, error: runsError } = await supa
         .from("runs")
-        .select(
-          "id, description, sales_description, sales_amount, created_at, photos:photos(url)"
-        )
-        .eq("user_id", userId)
+        .select("id, description, sales_description, sales_amount, created_at, photos:photos(url)")
+        .eq("user_id", currentUser.id)
+        .gte("created_at", sinceISO())
         .order("created_at", { ascending: false });
 
-      if (runsError) {
-        console.error(runsError);
-        return;
-      }
+      if (runsError) { console.error(runsError); return; }
 
       const runsListEl = document.getElementById("user-runs-list");
       runsListEl.innerHTML = "";
@@ -1508,61 +1447,40 @@
 
       if (runs && runs.length > 0) {
         runs.forEach((run) => {
-          const runEl = document.createElement("div");
-          runEl.className = "run-item";
-          const createdAt = run.created_at
-            ? new Date(run.created_at).toLocaleString("fr-FR")
-            : "-";
+          const createdAt = run.created_at ? new Date(run.created_at).toLocaleString("fr-FR") : "-";
           const salesDesc = run.sales_description || "";
           const salesAmount = run.sales_amount || 0;
           const photos = run.photos || [];
-
           totalPhotos += photos.length;
 
+          const runEl = document.createElement("div");
+          runEl.className = "run-item";
           runEl.innerHTML = `
             <div class="run-header">
               <div><strong>Run #${run.id}</strong></div>
-              <div class="run-date">${createdAt}</div>
+              <div class="run-date">${escapeHtml(createdAt)}</div>
             </div>
-            <div class="run-description">${run.description || ""}</div>
-            ${
-              salesDesc || salesAmount
-                ? `<div class="run-sales">
-                     Ventes: ${salesDesc ? salesDesc + " — " : ""}${
-                    salesAmount ? salesAmount + " €" : ""
-                  }
-                   </div>`
-                : ""
+            <div class="run-description">${escapeHtml(run.description || "")}</div>
+            ${(salesDesc || salesAmount) ? `
+              <div class="run-sales">
+                $ reçus: ${salesDesc ? escapeHtml(salesDesc) + " — " : ""}${salesAmount ? fmtUSD(salesAmount) : ""}
+              </div>` : ""
             }
             <div class="run-photo-zone">
-              <input type="file" class="photo-input" data-run-id="${
-                run.id
-              }" accept="image/*" />
-              <button class="btn btn-sm btn-secondary btn-upload-photo" data-run-id="${
-                run.id
-              }">Uploader photo</button>
+              <span class="badge-soft">Photos: ${photos.length}/${MAX_RUN_PHOTOS}</span>
+              <input type="file" class="photo-input" data-run-id="${run.id}" accept="image/*" multiple />
+              <button class="btn btn-sm btn-secondary btn-upload-photo" data-run-id="${run.id}">Uploader</button>
             </div>
-            ${
-              photos.length
-                ? `<div class="photos-preview">
-                    ${photos
-                      .map(
-                        (p) =>
-                          `<img src="${p.url}" alt="photo run ${run.id}" />`
-                      )
-                      .join("")}
-                   </div>`
-                : ""
+            ${photos.length ? `
+              <div class="photos-preview">
+                ${photos.map(p => `<img src="${p.url}" alt="photo run ${run.id}" />`).join("")}
+              </div>` : ""
             }
           `;
-
           runsListEl.appendChild(runEl);
         });
       } else {
-        const emptyEl = document.createElement("div");
-        emptyEl.className = "text-sm muted";
-        emptyEl.textContent = "Aucun run pour le moment.";
-        runsListEl.appendChild(emptyEl);
+        runsListEl.innerHTML = "<div class='text-sm muted'>Aucun run pour la période.</div>";
       }
 
       const runsCount = runs ? runs.length : 0;
@@ -1570,65 +1488,57 @@
       document.getElementById("user-runs-count-pill").textContent = runsCount;
       document.getElementById("user-photos-count").textContent = totalPhotos;
 
-      // lier les boutons d'upload
-      const uploadButtons = document.querySelectorAll(".btn-upload-photo");
-      uploadButtons.forEach((btn) => {
+      document.querySelectorAll(".btn-upload-photo").forEach((btn) => {
         btn.addEventListener("click", async () => {
           const runId = btn.dataset.runId;
-          await uploadPhotoForRun(runId, currentUser.id);
+          await uploadPhotosForRun(runId, currentUser.id);
           await refreshUserRunsAndPhotos();
         });
       });
     }
 
-    async function uploadPhotoForRun(runId, userId) {
-      const input = document.querySelector(
-        `.photo-input[data-run-id="${runId}"]`
-      );
-      if (!input || !input.files || !input.files[0]) {
-        alert("Sélectionne une image avant d'uploader.");
+    async function countRunPhotos(runId){
+      const { data, error } = await supa.from("photos").select("id").eq("run_id", runId);
+      if (error) { console.error(error); return 0; }
+      return (data || []).length;
+    }
+
+    async function uploadPhotosForRun(runId, userId) {
+      const input = document.querySelector(`.photo-input[data-run-id="${runId}"]`);
+      if (!input || !input.files || input.files.length === 0) {
+        alert("Sélectionne 1 ou 2 images avant d'uploader.");
+        return;
+      }
+      if (input.files.length > MAX_RUN_PHOTOS) {
+        alert("Maximum 2 photos par upload.");
         return;
       }
 
-      const file = input.files[0];
-      const filenameSafe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-      const filePath = `${userId}/${runId}/${Date.now()}_${filenameSafe}`;
+      const existing = await countRunPhotos(runId);
+      if (existing >= MAX_RUN_PHOTOS) {
+        alert("Ce run a déjà 2 photos. Impossible d'en ajouter plus.");
+        input.value = "";
+        return;
+      }
+      if (existing + input.files.length > MAX_RUN_PHOTOS) {
+        alert(`Il reste ${MAX_RUN_PHOTOS - existing} place(s) photo. Trop d'images sélectionnées.`);
+        return;
+      }
 
       try {
-        const { error } = await supa.storage
-          .from("runs-photos")
-          .upload(filePath, file);
+        for (const file of Array.from(input.files)) {
+          const filenameSafe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+          const filePath = `${userId}/${runId}/${Date.now()}_${filenameSafe}`;
 
-        if (error) {
-          console.error(error);
-          alert("Erreur upload image (voir console).");
-          return;
+          const { error } = await supa.storage.from("runs-photos").upload(filePath, file);
+          if (error) { console.error(error); alert("Erreur upload image."); return; }
+
+          const { data: publicUrlData, error: publicUrlError } = supa.storage.from("runs-photos").getPublicUrl(filePath);
+          if (publicUrlError) { console.error(publicUrlError); alert("Erreur URL publique."); return; }
+
+          const { error: insertError } = await supa.from("photos").insert({ run_id: runId, user_id: userId, url: publicUrlData.publicUrl });
+          if (insertError) { console.error(insertError); alert("Erreur enregistrement photo en base."); return; }
         }
-
-        const { data: publicUrlData, error: publicUrlError } = supa.storage
-          .from("runs-photos")
-          .getPublicUrl(filePath);
-
-        if (publicUrlError) {
-          console.error(publicUrlError);
-          alert("Erreur génération URL publique.");
-          return;
-        }
-
-        const publicUrl = publicUrlData.publicUrl;
-
-        const { error: insertError } = await supa.from("photos").insert({
-          run_id: runId,
-          user_id: userId,
-          url: publicUrl,
-        });
-
-        if (insertError) {
-          console.error(insertError);
-          alert("Erreur enregistrement photo en base.");
-          return;
-        }
-
         input.value = "";
       } catch (err) {
         console.error(err);
@@ -1648,83 +1558,50 @@
       const salesDesc = salesDescEl.value.trim();
       const salesAmount = parseFloat(salesAmountEl.value || "0") || 0;
 
-      if (!description) {
-        alert("Merci de remplir au minimum la description du run.");
+      if (!description) { alert("Merci de remplir au minimum la description du run."); return; }
+
+      // ✅ 1 photo min / 2 max
+      if (!photoInput || !photoInput.files || photoInput.files.length < 1) {
+        alert("Minimum 1 photo obligatoire pour créer le run.");
+        return;
+      }
+      if (photoInput.files.length > MAX_RUN_PHOTOS) {
+        alert("Maximum 2 photos pour créer le run.");
         return;
       }
 
-      // 1️⃣ Création du run
       const { data: runInsert, error: runError } = await supa
         .from("runs")
-        .insert({
-          user_id: currentUser.id,
-          description,
-          sales_description: salesDesc || null,
-          sales_amount: salesAmount || null,
-        })
+        .insert({ user_id: currentUser.id, description, sales_description: salesDesc || null, sales_amount: salesAmount || null })
         .select()
         .maybeSingle();
 
-      if (runError || !runInsert) {
-        console.error(runError);
-        alert("Erreur enregistrement du run.");
-        return;
-      }
+      if (runError || !runInsert) { console.error(runError); alert("Erreur enregistrement du run."); return; }
 
       const runId = runInsert.id;
 
-      // 2️⃣ Si pas de photo, on s'arrête là
-      if (!photoInput.files.length) {
-        await refreshUserRunsAndPhotos();
-        descEl.value = "";
-        salesDescEl.value = "";
-        salesAmountEl.value = "";
-        photoInput.value = "";
+      // upload 1..2 photos
+      try{
+        for (const file of Array.from(photoInput.files)) {
+          const filenameSafe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+          const filePath = `${currentUser.id}/${runId}/${Date.now()}_${filenameSafe}`;
+
+          const { error: uploadError } = await supa.storage.from("runs-photos").upload(filePath, file);
+          if (uploadError) { console.error(uploadError); alert("Erreur upload image."); return; }
+
+          const { data: urlData } = supa.storage.from("runs-photos").getPublicUrl(filePath);
+          const { error: photoError } = await supa.from("photos").insert({ run_id: runId, user_id: currentUser.id, url: urlData.publicUrl });
+          if (photoError) { console.error(photoError); alert("Erreur enregistrement photo."); return; }
+        }
+      } catch(e){
+        console.error(e);
+        alert("Erreur upload des photos.");
         return;
       }
 
-      const file = photoInput.files[0];
-      const filenameSafe = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
-      const filePath = `${currentUser.id}/${runId}/${Date.now()}_${filenameSafe}`;
-
-      // 3️⃣ Upload dans Supabase Storage
-      const { error: uploadError } = await supa.storage
-        .from("runs-photos")
-        .upload(filePath, file);
-
-      if (uploadError) {
-        console.error(uploadError);
-        alert("Erreur upload image.");
-        return;
-      }
-
-      // 4️⃣ Récupérer URL publique
-      const { data: urlData } = supa.storage
-        .from("runs-photos")
-        .getPublicUrl(filePath);
-
-      const publicUrl = urlData.publicUrl;
-
-      // 5️⃣ Enregistrer la photo en base
-      const { error: photoError } = await supa.from("photos").insert({
-        run_id: runId,
-        user_id: currentUser.id,
-        url: publicUrl,
-      });
-
-      if (photoError) {
-        console.error(photoError);
-        alert("Erreur enregistrement photo.");
-        return;
-      }
-
-      // 6️⃣ Nettoyer formulaire + refresh
-      descEl.value = "";
-      salesDescEl.value = "";
-      salesAmountEl.value = "";
-      photoInput.value = "";
-
+      descEl.value = ""; salesDescEl.value = ""; salesAmountEl.value = ""; photoInput.value = "";
       await refreshUserRunsAndPhotos();
+      await refreshUserFinance();
     }
 
     // ---------------------------------------
@@ -1738,37 +1615,21 @@
       const price = parseFloat(document.getElementById("vente-price").value || "0");
       const photoInput = document.getElementById("vente-photo");
 
-      if (!desc || !price) {
-        alert("Description et montant obligatoires.");
-        return;
-      }
+      if (!desc || !price) { alert("Description et montant obligatoires."); return; }
 
-      // 1️⃣ Upload photo si existe
       let photoUrl = null;
-
       if (photoInput.files.length > 0) {
         const file = photoInput.files[0];
         const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
         const filePath = `${currentUser.id}/ventes/${Date.now()}_${safeName}`;
 
-        const { error: uploadError } = await supa.storage
-          .from("runs-photos")
-          .upload(filePath, file);
+        const { error: uploadError } = await supa.storage.from("runs-photos").upload(filePath, file);
+        if (uploadError) { console.error(uploadError); alert("Erreur upload photo vente."); return; }
 
-        if (uploadError) {
-          console.error(uploadError);
-          alert("Erreur upload photo vente.");
-          return;
-        }
-
-        const { data } = supa.storage
-          .from("runs-photos")
-          .getPublicUrl(filePath);
-
+        const { data } = supa.storage.from("runs-photos").getPublicUrl(filePath);
         photoUrl = data.publicUrl;
       }
 
-      // 2️⃣ Enregistrement vente
       const { error } = await supa.from("ventes").insert({
         user_id: currentUser.id,
         description: desc,
@@ -1777,20 +1638,20 @@
         photo_url: photoUrl
       });
 
-      if (error) {
-        console.error(error);
-        alert("Erreur enregistrement vente.");
-        return;
-      }
+      if (error) { console.error(error); alert("Erreur enregistrement vente."); return; }
 
-      // reset
       document.getElementById("vente-desc").value = "";
       document.getElementById("vente-qty").value = "1";
       document.getElementById("vente-price").value = "";
       document.getElementById("vente-photo").value = "";
 
       await loadVentes();
-      await refreshAdminStats(); // mettre à jour les stats ventes si admin est connecté ailleurs
+      if (currentRole === "admin") {
+        await refreshAdminStats();
+        await refreshAdminVendorsCommissions();
+      } else {
+        await refreshUserFinance();
+      }
     }
 
     async function loadVentes() {
@@ -1800,144 +1661,151 @@
         .from("ventes")
         .select("*")
         .eq("user_id", currentUser.id)
+        .gte("created_at", sinceISO())
         .order("created_at", { ascending: false });
 
-      if (error) {
-        console.error(error);
-        return;
-      }
+      if (error) { console.error(error); return; }
 
       const list = document.getElementById("ventes-list");
       list.innerHTML = "";
 
       if (!ventes || ventes.length === 0) {
-        list.innerHTML = "<div class='text-sm muted'>Aucune vente enregistrée.</div>";
+        list.innerHTML = "<div class='text-sm muted'>Aucune vente sur la période.</div>";
         return;
       }
 
       ventes.forEach((v) => {
         const el = document.createElement("div");
         el.className = "run-item";
-
         el.innerHTML = `
           <div class="run-header">
             <strong>Vente #${v.id}</strong>
             <div class="run-date">${new Date(v.created_at).toLocaleString("fr-FR")}</div>
           </div>
-          <div class="run-description">${v.description}</div>
-          <div class="run-sales">${v.quantity} × — ${v.amount} €</div>
-          ${
-            v.photo_url
-              ? `<div class="photos-preview">
-                  <img src="${v.photo_url}" alt="photo vente ${v.id}" />
-                 </div>`
-              : ""
-          }
+          <div class="run-description">${escapeHtml(v.description)}</div>
+          <div class="run-sales">Qté: ${v.quantity} • Reçus: ${fmtUSD(v.amount)}</div>
+          ${v.photo_url ? `<div class="photos-preview"><img src="${v.photo_url}" alt="photo vente ${v.id}" /></div>` : ""}
         `;
         list.appendChild(el);
       });
     }
 
     // ---------------------------------------
-    // SECTION ADMIN
+    // ADMIN
     // ---------------------------------------
     async function loadAdminDashboard() {
       await refreshAdminStats();
       await refreshAdminUsersTable();
       await refreshAdminVentes();
+      await loadAdminTransactions();
+      await refreshAdminRunnersBonus();
+      await refreshAdminVendorsCommissions();
     }
 
     async function refreshAdminStats() {
-      // Utilisateurs
-      const { count: usersCount, error: usersErr } = await supa
-        .from("users")
-        .select("*", { count: "exact", head: true });
+      const { count: usersCount, error: usersErr } = await supa.from("users").select("*", { count: "exact", head: true });
       if (usersErr) console.error(usersErr);
 
-      // Runs
       const { count: runsCount, error: runsErr } = await supa
         .from("runs")
-        .select("*", { count: "exact", head: true });
+        .select("*", { count: "exact", head: true })
+        .gte("created_at", sinceISO());
       if (runsErr) console.error(runsErr);
 
-      // Photos
       const { count: photosCount, error: photosErr } = await supa
-        .from("photos")
-        .select("*", { count: "exact", head: true });
+  .from("photos")
+  .select("*", { count: "exact", head: true })
+  .gte("created_at", sinceISO());
+
       if (photosErr) console.error(photosErr);
 
-      // Somme des ventes (table ventes)
+      // CA = ventes.amount + runs.sales_amount (période)
       const { data: ventesData, error: ventesErr } = await supa
         .from("ventes")
-        .select("amount");
-      let totalSales = 0;
-      if (!ventesErr && ventesData) {
-        ventesData.forEach((v) => {
-          if (v.amount) totalSales += Number(v.amount);
-        });
-      }
+        .select("amount")
+        .gte("created_at", sinceISO());
+      if (ventesErr) console.error(ventesErr);
 
-      document.getElementById("admin-users-count").textContent =
-        usersCount ?? 0;
-      document.getElementById("admin-runs-count").textContent =
-        runsCount ?? 0;
-      document.getElementById("admin-photos-count").textContent =
-        photosCount ?? 0;
-      document.getElementById("admin-sales-sum").textContent =
-        totalSales.toFixed(2);
+      let ventesSum = 0;
+      (ventesData || []).forEach(v => { ventesSum += Number(v.amount || 0); });
+
+      const { data: runsSalesData, error: runsSalesErr } = await supa
+        .from("runs")
+        .select("sales_amount")
+        .gte("created_at", sinceISO());
+      if (runsSalesErr) console.error(runsSalesErr);
+
+      let runsSum = 0;
+      (runsSalesData || []).forEach(r => { runsSum += Number(r.sales_amount || 0); });
+
+      const totalCA = ventesSum + runsSum;
+
+      // Achats matière première (transactions période)
+      let purchasesSum = 0;
+      const { data: txData, error: txErr } = await supa
+        .from("transactions")
+        .select("amount,type,category,created_at")
+        .gte("created_at", sinceISO());
+      if (txErr) console.error(txErr);
+      (txData || []).forEach(t => {
+        const a = Number(t.amount || 0);
+        const isPurchase = (t.type === "purchase") || (t.category === "matiere_premiere");
+        if (isPurchase) purchasesSum += a;
+      });
+
+      const gross = totalCA - purchasesSum;
+
+      document.getElementById("admin-users-count").textContent = usersCount ?? 0;
+      document.getElementById("admin-runs-count").textContent = runsCount ?? 0;
+      document.getElementById("admin-photos-count").textContent = photosCount ?? 0;
+
+      document.getElementById("admin-runs-sum").textContent = fmtUSD(runsSum);
+      document.getElementById("admin-ventes-sum").textContent = fmtUSD(ventesSum);
+      document.getElementById("admin-sales-sum").textContent = fmtUSD(totalCA);
+      document.getElementById("admin-purchases-sum").textContent = fmtUSD(purchasesSum);
+      document.getElementById("admin-gross-sum").textContent = fmtUSD(gross);
     }
 
     async function refreshAdminUsersTable() {
       const { data, error } = await supa
         .from("users")
-        .select("id, username, pin_code, role, created_at, runs:runs(id)")
+        .select("id, username, pin_code, role, commission_percent, created_at, runs:runs(id,created_at)")
         .order("created_at", { ascending: true });
 
-      if (error) {
-        console.error(error);
-        return;
-      }
+      if (error) { console.error(error); return; }
 
       adminUsersCache = {};
-
       const tbody = document.querySelector("#admin-users-table tbody");
       tbody.innerHTML = "";
 
       if (!data || data.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 4;
-        td.textContent = "Aucun utilisateur.";
-        td.className = "text-sm muted";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
+        tbody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Aucun utilisateur.</td></tr>";
         return;
       }
 
       data.forEach((user) => {
         adminUsersCache[user.id] = user;
 
+        const runsPeriod = (user.runs || []).filter(r => {
+          try { return new Date(r.created_at).toISOString() >= sinceISO(); } catch(e){ return true; }
+        });
+        const runsCount = runsPeriod.length;
+
+        const username = user.username || ("Utilisateur #" + user.id);
+        const role = user.role || "user";
+        const roleClass = (role === "admin") ? "admin" : (role === "runner" ? "runner" : (role === "vendeur" ? "vendeur" : "user"));
+
         const tr = document.createElement("tr");
         tr.dataset.userId = user.id;
-
-        const runsCount = user.runs ? user.runs.length : 0;
-        const username = user.username || "Utilisateur #" + user.id;
-        const role = user.role || "user";
-        const roleClass =
-          role === "admin" ? "admin" : (role === "runner" ? "runner" : (role === "vendeur" ? "vendeur" : "user"));
-
         tr.innerHTML = `
-          <td>${username}</td>
-          <td>${user.pin_code}</td>
-          <td>
-            <span class="pill-role ${roleClass}">${role.toUpperCase()}</span>
-          </td>
+          <td>${escapeHtml(username)}</td>
+          <td>${escapeHtml(user.pin_code)}</td>
+          <td><span class="pill-role ${roleClass}">${escapeHtml(role.toUpperCase())}</span></td>
           <td>${runsCount}</td>
         `;
         tbody.appendChild(tr);
       });
 
-      // click sur user
       tbody.querySelectorAll("tr").forEach((row) => {
         row.addEventListener("click", async () => {
           const userId = row.dataset.userId;
@@ -1949,95 +1817,59 @@
     async function loadAdminUserDetails(userId) {
       adminSelectedUserId = userId;
 
-      // Infos user
-      const { data: user, error } = await supa
-        .from("users")
-        .select("*")
-        .eq("id", userId)
-        .maybeSingle();
+      const { data: user, error } = await supa.from("users").select("*").eq("id", userId).maybeSingle();
+      if (error || !user) { console.error(error); return; }
 
-      if (error || !user) {
-        console.error(error);
-        return;
-      }
+      const username = user.username || ("Utilisateur #" + user.id);
+      document.getElementById("admin-selected-user").textContent =
+        `${username} (PIN: ${user.pin_code}, rôle: ${user.role || "user"})`;
 
-      const username = user.username || "Utilisateur #" + user.id;
-      document.getElementById(
-        "admin-selected-user"
-      ).textContent = `${username} (PIN: ${user.pin_code}, rôle: ${
-        user.role || "user"
-      })`;
-
-      // remplir le formulaire d'édition
       document.getElementById("admin-user-name").value = user.username || "";
       document.getElementById("admin-user-pin").value = user.pin_code || "";
       document.getElementById("admin-user-role").value = user.role || "user";
 
-      document
-        .getElementById("btn-admin-delete-user")
-        .classList.remove("hidden");
+      const commissionRow = document.getElementById("vendor-commission-row");
+      const commissionInput = document.getElementById("admin-user-commission");
+      const isVendor = (user.role === "vendeur");
+      if (commissionRow) commissionRow.style.display = isVendor ? "flex" : "none";
+      if (commissionInput) commissionInput.value = isVendor ? String(user.commission_percent ?? 0) : "";
+      document.getElementById("btn-admin-delete-user").classList.remove("hidden");
 
-      // Récup runs
       const { data: runs, error: runsErr } = await supa
         .from("runs")
-        .select(
-          "id, description, sales_description, sales_amount, created_at, photos:photos(url)"
-        )
+        .select("id, description, sales_description, sales_amount, created_at, photos:photos(url)")
         .eq("user_id", user.id)
+        .gte("created_at", sinceISO())
         .order("created_at", { ascending: false });
 
-      if (runsErr) {
-        console.error(runsErr);
-        return;
-      }
+      if (runsErr) { console.error(runsErr); return; }
 
       const runsEl = document.getElementById("admin-selected-runs");
       runsEl.innerHTML = "";
 
       if (!runs || runs.length === 0) {
-        const empty = document.createElement("div");
-        empty.className = "text-sm muted";
-        empty.textContent = "Aucun run pour cet utilisateur.";
-        runsEl.appendChild(empty);
+        runsEl.innerHTML = "<div class='text-sm muted'>Aucun run pour cet utilisateur sur la période.</div>";
         return;
       }
 
       runs.forEach((run) => {
-        const el = document.createElement("div");
-        el.className = "run-item";
-        const createdAt = run.created_at
-          ? new Date(run.created_at).toLocaleString("fr-FR")
-          : "-";
+        const createdAt = run.created_at ? new Date(run.created_at).toLocaleString("fr-FR") : "-";
         const salesDesc = run.sales_description || "";
         const salesAmount = run.sales_amount || 0;
         const photos = run.photos || [];
 
+        const el = document.createElement("div");
+        el.className = "run-item";
         el.innerHTML = `
           <div class="run-header">
             <div><strong>Run #${run.id}</strong></div>
-            <div class="run-date">${createdAt}</div>
+            <div class="run-date">${escapeHtml(createdAt)}</div>
           </div>
-          <div class="run-description">${run.description || ""}</div>
-          ${
-            salesDesc || salesAmount
-              ? `<div class="run-sales">
-                   Ventes: ${salesDesc ? salesDesc + " — " : ""}${
-                  salesAmount ? salesAmount + " €" : ""
-                }
-                 </div>`
-              : ""
+          <div class="run-description">${escapeHtml(run.description || "")}</div>
+          ${(salesDesc || salesAmount) ? `
+            <div class="run-sales">$ reçus: ${salesDesc ? escapeHtml(salesDesc) + " — " : ""}${salesAmount ? fmtUSD(salesAmount) : ""}</div>` : ""
           }
-          ${
-            photos.length
-              ? `<div class="photos-preview">
-                  ${photos
-                    .map(
-                      (p) => `<img src="${p.url}" alt="photo run ${run.id}" />`
-                    )
-                    .join("")}
-                 </div>`
-              : ""
-          }
+          ${photos.length ? `<div class="photos-preview">${photos.map(p => `<img src="${p.url}" alt="photo run ${run.id}" />`).join("")}</div>` : ""}
         `;
         runsEl.appendChild(el);
       });
@@ -2047,44 +1879,31 @@
       const { data: ventes, error } = await supa
         .from("ventes")
         .select("*")
+        .gte("created_at", sinceISO())
         .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error(error);
-        return;
-      }
+      if (error) { console.error(error); return; }
 
       const tbody = document.querySelector("#admin-ventes-table tbody");
       tbody.innerHTML = "";
 
       if (!ventes || ventes.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 7;
-        td.textContent = "Aucune vente enregistrée.";
-        td.className = "text-sm muted";
-        tr.appendChild(td);
-        tbody.appendChild(tr);
+        tbody.innerHTML = "<tr><td colspan='7' class='text-sm muted'>Aucune vente sur la période.</td></tr>";
         return;
       }
 
       ventes.forEach((v) => {
-        const tr = document.createElement("tr");
         const user = adminUsersCache[v.user_id];
         const username = user ? (user.username || ("User #" + user.id)) : ("ID " + v.user_id);
 
+        const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${v.id}</td>
-          <td>${username}</td>
-          <td>${v.description}</td>
+          <td>${escapeHtml(username)}</td>
+          <td>${escapeHtml(v.description)}</td>
           <td>${v.quantity}</td>
-          <td>${v.amount}</td>
+          <td>${fmtUSD(v.amount)}</td>
           <td>${new Date(v.created_at).toLocaleString("fr-FR")}</td>
-          <td>${
-            v.photo_url
-              ? `<img src="${v.photo_url}" alt="vente ${v.id}" style="width:50px;height:50px;border-radius:6px;object-fit:cover;">`
-              : "-"
-          }</td>
+          <td>${v.photo_url ? `<img src="${v.photo_url}" alt="vente ${v.id}" style="width:52px;height:52px;border-radius:12px;object-fit:cover;border:1px solid rgba(255,122,144,.45);">` : "-"}</td>
         `;
         tbody.appendChild(tr);
       });
@@ -2094,42 +1913,20 @@
       const name = document.getElementById("admin-user-name").value.trim();
       const pin = document.getElementById("admin-user-pin").value.trim();
       const role = document.getElementById("admin-user-role").value || "user";
+      const commissionInput = document.getElementById("admin-user-commission");
+      const commissionPercentRaw = commissionInput ? commissionInput.value : "";
+      const commissionPercent = Number(commissionPercentRaw || (role === "vendeur" ? 15 : 0));
 
-      if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-        alert("Le Code PIN doit être 4 chiffres.");
-        return;
-      }
-
-      if (!name) {
-        alert("Merci d'indiquer un nom / pseudo.");
-        return;
-      }
+      if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) { alert("Le Code PIN doit être 4 chiffres."); return; }
+      if (!name) { alert("Merci d'indiquer un nom / pseudo."); return; }
 
       try {
         if (adminSelectedUserId) {
-          // update
-          const { error } = await supa
-            .from("users")
-            .update({ username: name, pin_code: pin, role })
-            .eq("id", adminSelectedUserId);
-
-          if (error) {
-            console.error(error);
-            alert("Erreur mise à jour de l'utilisateur.");
-            return;
-          }
+          const { error } = await supa.from("users").update({ username: name, pin_code: pin, role, commission_percent: (role === "vendeur" ? commissionPercent : 0) }).eq("id", adminSelectedUserId);
+          if (error) { console.error(error); alert("Erreur mise à jour de l'utilisateur."); return; }
         } else {
-          // insert
-          const { error } = await supa.from("users").insert({
-            username: name,
-            pin_code: pin,
-            role,
-          });
-          if (error) {
-            console.error(error);
-            alert("Erreur création utilisateur.");
-            return;
-          }
+          const { error } = await supa.from("users").insert({ username: name, pin_code: pin, role, commission_percent: (role === "vendeur" ? commissionPercent : 0) });
+          if (error) { console.error(error); alert("Erreur création utilisateur."); return; }
         }
 
         await refreshAdminUsersTable();
@@ -2137,13 +1934,15 @@
         await refreshAdminVentes();
 
         adminSelectedUserId = null;
-        document.getElementById("admin-selected-user").textContent =
-          "Aucun utilisateur sélectionné.";
+        document.getElementById("admin-selected-user").textContent = "Aucun utilisateur sélectionné.";
         document.getElementById("admin-selected-runs").innerHTML = "";
         document.getElementById("btn-admin-delete-user").classList.add("hidden");
         document.getElementById("admin-user-name").value = "";
         document.getElementById("admin-user-pin").value = "";
         document.getElementById("admin-user-role").value = "user";
+        const commissionRow = document.getElementById("vendor-commission-row");
+        if (commissionRow) commissionRow.style.display = "none";
+        if (commissionInput) commissionInput.value = "";
       } catch (err) {
         console.error(err);
         alert("Erreur inattendue pendant la sauvegarde.");
@@ -2152,31 +1951,25 @@
 
     async function adminDeleteUser() {
       if (!adminSelectedUserId) return;
-      const confirmDelete = confirm(
-        "Supprimer cet utilisateur ? Tous ses runs et photos resteront si tu ne les supprimes pas séparément."
-      );
+
+      const confirmDelete = confirm("Supprimer cet utilisateur ? (ses runs/photos peuvent rester si tu ne les supprimes pas séparément)");
       if (!confirmDelete) return;
 
       try {
-        const { error } = await supa
-          .from("users")
-          .delete()
-          .eq("id", adminSelectedUserId);
-
-        if (error) {
-          console.error(error);
-          alert("Erreur suppression utilisateur.");
-          return;
-        }
+        const { error } = await supa.from("users").delete().eq("id", adminSelectedUserId);
+        if (error) { console.error(error); alert("Erreur suppression utilisateur."); return; }
 
         adminSelectedUserId = null;
-        document.getElementById("admin-selected-user").textContent =
-          "Aucun utilisateur sélectionné.";
+        document.getElementById("admin-selected-user").textContent = "Aucun utilisateur sélectionné.";
         document.getElementById("admin-selected-runs").innerHTML = "";
         document.getElementById("btn-admin-delete-user").classList.add("hidden");
         document.getElementById("admin-user-name").value = "";
         document.getElementById("admin-user-pin").value = "";
         document.getElementById("admin-user-role").value = "user";
+        const commissionRow = document.getElementById("vendor-commission-row");
+        if (commissionRow) commissionRow.style.display = "none";
+        const commissionInput = document.getElementById("admin-user-commission");
+        if (commissionInput) commissionInput.value = "";
 
         await refreshAdminUsersTable();
         await refreshAdminStats();
@@ -2188,12 +1981,835 @@
     }
 
     // ---------------------------------------
-    // Déconnexion
+    // 🥁 TOMBOLA
+    // ---------------------------------------
+    function setupTombolaMode(){
+      const tag = document.getElementById("tombola-mode-tag");
+      const isAdmin = currentRole === "admin";
+      tag.textContent = isAdmin ? "Admin" : "Lecture";
+
+      document.getElementById("btn-tombola-add").style.display = isAdmin ? "inline-flex" : "none";
+      document.getElementById("btn-tombola-draw").style.display = isAdmin ? "inline-flex" : "none";
+      document.getElementById("tombola-admin-form").style.display = isAdmin ? "flex" : "none";
+    }
+
+    async function loadTombola(){
+      const participantsEl = document.getElementById("tombola-participants");
+      const totalTicketsEl = document.getElementById("tombola-total-tickets");
+      const drawsEl = document.getElementById("tombola-draws");
+      participantsEl.innerHTML = "";
+      drawsEl.innerHTML = "";
+      totalTicketsEl.textContent = "0";
+
+      const { data: parts, error: pErr } = await supa
+        .from("tombola_participants")
+        .select("*")
+        .order("tickets", { ascending:false })
+        .order("created_at", { ascending:false });
+
+      if (pErr) {
+        console.error(pErr);
+        participantsEl.innerHTML =
+          "<div class='text-sm muted'>Table tombola_participants manquante.</div>";
+      } else {
+        if (!parts || parts.length === 0) {
+          participantsEl.innerHTML = "<div class='text-sm muted'>Aucun participant.</div>";
+        } else {
+          const totalTickets = parts.reduce((acc, p) => acc + Number(p.tickets || 0), 0);
+          totalTicketsEl.textContent = totalTickets;
+
+          parts.forEach((p) => {
+            const item = document.createElement("div");
+            item.className = "run-item";
+            const name = escapeHtml(p.name);
+            const contact = p.contact ? (" • " + escapeHtml(p.contact)) : "";
+            const tickets = Number(p.tickets || 0);
+            const products = Number(p.products_count || 0);
+
+            item.innerHTML = `
+              <div class="run-header">
+                <div><strong>${name}</strong><div class="text-xs muted">${contact || ""}</div></div>
+                <div class="stat-pill">tickets: <span>${tickets}</span></div>
+              </div>
+              <div class="text-xs muted" style="margin-top:4px;">Produits achetés: <strong>${products}</strong></div>
+              ${currentRole === "admin" ? `
+                <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+                  <button class="btn-secondary btn-sm" data-add-product="${p.id}">+1 produit</button>
+                  <button class="btn-secondary btn-sm" data-add-product5="${p.id}">+5 produits</button>
+                  <button class="btn-danger btn-sm" data-del-part="${p.id}">Supprimer</button>
+                </div>
+              ` : ""}
+            `;
+            participantsEl.appendChild(item);
+          });
+
+          if (currentRole === "admin") {
+            document.querySelectorAll("[data-add-product]").forEach(btn=>{
+              btn.addEventListener("click", async ()=>{
+                await addProductsToParticipant(btn.getAttribute("data-add-product"), 1);
+                await loadTombola();
+              });
+            });
+            document.querySelectorAll("[data-add-product5]").forEach(btn=>{
+              btn.addEventListener("click", async ()=>{
+                await addProductsToParticipant(btn.getAttribute("data-add-product5"), 5);
+                await loadTombola();
+              });
+            });
+            document.querySelectorAll("[data-del-part]").forEach(btn=>{
+              btn.addEventListener("click", async ()=>{
+                const id = btn.getAttribute("data-del-part");
+                if (!confirm("Supprimer ce participant ?")) return;
+                const { error } = await supa.from("tombola_participants").delete().eq("id", id);
+                if (error) console.error(error);
+                await loadTombola();
+              });
+            });
+          }
+        }
+      }
+
+      const { data: draws, error: dErr } = await supa
+        .from("tombola_draws")
+        .select("*")
+        .order("created_at", { ascending:false })
+        .limit(10);
+
+      if (dErr) {
+        console.error(dErr);
+        drawsEl.innerHTML = "<div class='text-sm muted'>Table tombola_draws manquante.</div>";
+      } else {
+        if (!draws || draws.length === 0) {
+          drawsEl.innerHTML = "<div class='text-sm muted'>Aucun tirage.</div>";
+        } else {
+          draws.forEach((dr) => {
+            const row = document.createElement("div");
+            row.className = "mini-item";
+            row.innerHTML = `
+              <div>
+                <strong>${escapeHtml(dr.winner_name || "—")}</strong>
+                <div class="mini-meta">${new Date(dr.created_at).toLocaleString("fr-FR")} • tickets gagnant: ${dr.winner_tickets || 0} • total: ${dr.total_tickets || 0}</div>
+              </div>
+              <div class="tag">TIRAGE</div>
+            `;
+            drawsEl.appendChild(row);
+          });
+
+          const last = draws[0];
+          document.getElementById("tombola-winner-name").textContent = last.winner_name || "—";
+          document.getElementById("tombola-winner-meta").textContent =
+            `Tickets gagnant: ${last.winner_tickets || 0} • Total tickets: ${last.total_tickets || 0} • ${new Date(last.created_at).toLocaleString("fr-FR")}`;
+        }
+      }
+    }
+
+    async function addParticipant(){
+      if (currentRole !== "admin") return;
+
+      const name = document.getElementById("tombola-name").value.trim();
+      const contact = document.getElementById("tombola-contact").value.trim();
+      const products = Math.max(1, parseInt(document.getElementById("tombola-products").value || "1", 10));
+
+      if (!name) { alert("Nom obligatoire."); return; }
+
+      const payload = {
+        name,
+        contact: contact || null,
+        products_count: products,
+        tickets: products
+      };
+
+      const { error } = await supa.from("tombola_participants").insert(payload);
+      if (error) { console.error(error); alert("Erreur inscription (table tombola_participants ?)"); return; }
+
+      document.getElementById("tombola-name").value = "";
+      document.getElementById("tombola-contact").value = "";
+      document.getElementById("tombola-products").value = "1";
+
+      await loadTombola();
+    }
+
+    async function addProductsToParticipant(participantId, addCount){
+      if (currentRole !== "admin") return;
+
+      const { data, error } = await supa
+        .from("tombola_participants")
+        .select("*")
+        .eq("id", participantId)
+        .maybeSingle();
+
+      if (error || !data) { console.error(error); return; }
+
+      const newProducts = Number(data.products_count || 0) + Number(addCount);
+      const newTickets = Number(data.tickets || 0) + Number(addCount);
+
+      const { error: updErr } = await supa
+        .from("tombola_participants")
+        .update({ products_count: newProducts, tickets: newTickets })
+        .eq("id", participantId);
+
+      if (updErr) console.error(updErr);
+    }
+
+    async function drawWinner(){
+      if (currentRole !== "admin") return;
+
+      const drum = document.getElementById("drum");
+      drum.classList.add("spinning");
+
+      const { data: parts, error } = await supa
+        .from("tombola_participants")
+        .select("id, name, tickets")
+        .order("id", { ascending:true });
+
+      if (error) { console.error(error); drum.classList.remove("spinning"); alert("Erreur tombola."); return; }
+      if (!parts || parts.length === 0) { drum.classList.remove("spinning"); alert("Aucun participant."); return; }
+
+      const total = parts.reduce((acc, p) => acc + Number(p.tickets || 0), 0);
+      if (total <= 0) { drum.classList.remove("spinning"); alert("Tickets total = 0."); return; }
+
+      const r = Math.floor(Math.random() * total) + 1;
+      let cumulative = 0;
+      let winner = null;
+
+      for (const p of parts) {
+        cumulative += Number(p.tickets || 0);
+        if (r <= cumulative) { winner = p; break; }
+      }
+      if (!winner) winner = parts[parts.length - 1];
+
+      await new Promise(res => setTimeout(res, 1600));
+      drum.classList.remove("spinning");
+
+      const drawRow = {
+        winner_id: winner.id,
+        winner_name: winner.name,
+        winner_tickets: Number(winner.tickets || 0),
+        total_tickets: total
+      };
+
+      const { error: dErr } = await supa.from("tombola_draws").insert(drawRow);
+      if (dErr) console.error(dErr);
+
+      await loadTombola();
+      alert("🎉 Gagnant: " + winner.name);
+    }
+
+    async function resetTombola(){
+      await supa.from("tombola_draws").delete().neq("id",-1);
+      await supa.from("tombola_participants").delete().neq("id",-1);
+    }
+
+    // ---------------------------------------
+    // 💸 TRANSACTIONS + CALCUL CA (période)
+    // ---------------------------------------
+    function syncTxCategory(scope){
+      const typeEl = document.getElementById(scope === "a" ? "txa-type" : "txu-type");
+      const catEl  = document.getElementById(scope === "a" ? "txa-category" : "txu-category");
+      if (!typeEl || !catEl) return;
+
+      if (typeEl.value === "purchase") {
+        catEl.value = "matiere_premiere";
+        catEl.disabled = true;
+      } else {
+        catEl.disabled = false;
+      }
+    }
+
+    async function addTransaction(scope){
+      if (!currentUser) return;
+
+      const typeEl  = document.getElementById(scope === "a" ? "txa-type" : "txu-type");
+      const catEl   = document.getElementById(scope === "a" ? "txa-category" : "txu-category");
+      const descEl  = document.getElementById(scope === "a" ? "txa-desc" : "txu-desc");
+      const amtEl   = document.getElementById(scope === "a" ? "txa-amount" : "txu-amount");
+      const photoEl = document.getElementById(scope === "a" ? "txa-photo" : "txu-photo");
+
+      const type = (typeEl.value || "purchase").trim();
+      const category = (catEl.value || "matiere_premiere").trim();
+      const description = descEl.value.trim();
+      const amount = parseFloat(amtEl.value || "0") || 0;
+
+      if (!description || amount <= 0) {
+        alert("Description + montant obligatoires.");
+        return;
+      }
+
+      let photoUrl = null;
+      if (photoEl && photoEl.files && photoEl.files.length > 0) {
+        const file = photoEl.files[0];
+        const safeName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, "_");
+        const filePath = `${currentUser.id}/transactions/${Date.now()}_${safeName}`;
+
+        const { error: uploadError } = await supa.storage.from("runs-photos").upload(filePath, file);
+        if (uploadError) { console.error(uploadError); alert("Erreur upload photo."); return; }
+
+        const { data } = supa.storage.from("runs-photos").getPublicUrl(filePath);
+        photoUrl = data?.publicUrl || null;
+      }
+
+      const { error } = await supa.from("transactions").insert({
+        user_id: currentUser.id,
+        type, category, description, amount,
+        photo_url: photoUrl
+      });
+      if (error) {
+        console.error(error);
+        alert("Erreur enregistrement. (Table transactions manquante ?)");
+        return;
+      }
+
+      descEl.value = "";
+      amtEl.value = "";
+      if (photoEl) photoEl.value = "";
+      typeEl.value = "purchase";
+      catEl.value = "matiere_premiere";
+      syncTxCategory(scope);
+
+      if (currentRole === "admin") {
+        await loadAdminTransactions();
+        await refreshAdminStats();
+      } else {
+        await loadUserTransactions();
+        await refreshUserFinance();
+      }
+    }
+
+    async function getRunsTotal(userIdOrNull){
+      let total = 0;
+      let q = supa.from("runs").select("sales_amount").gte("created_at", sinceISO());
+      if (userIdOrNull) q = q.eq("user_id", userIdOrNull);
+      const { data, error } = await q;
+      if (error) { console.error(error); return 0; }
+      (data || []).forEach(r => { total += Number(r.sales_amount || 0); });
+      return total;
+    }
+
+    async function getVentesTotal(userIdOrNull){
+      let total = 0;
+      let q = supa.from("ventes").select("amount").gte("created_at", sinceISO());
+      if (userIdOrNull) q = q.eq("user_id", userIdOrNull);
+      const { data, error } = await q;
+      if (error) { console.error(error); return 0; }
+      (data || []).forEach(v => { total += Number(v.amount || 0); });
+      return total;
+    }
+
+    async function getPurchasesTotal(userIdOrNull){
+      let total = 0;
+      let q = supa.from("transactions").select("amount,type,category,created_at").gte("created_at", sinceISO());
+      if (userIdOrNull) q = q.eq("user_id", userIdOrNull);
+      const { data, error } = await q;
+      if (error) { console.error(error); return 0; }
+
+      (data || []).forEach(t => {
+        const a = Number(t.amount || 0);
+        const isPurchase = (t.type === "purchase") || (t.category === "matiere_premiere");
+        if (isPurchase) total += a;
+      });
+      return total;
+    }
+
+    async function loadUserTransactions(){
+      if (!currentUser) return;
+      const list = document.getElementById("user-transactions-list");
+      list.innerHTML = "";
+
+      const { data, error } = await supa
+        .from("transactions")
+        .select("*")
+        .eq("user_id", currentUser.id)
+        .gte("created_at", sinceISO())
+        .order("created_at", { ascending:false })
+        .limit(80);
+
+      if (error) {
+        console.error(error);
+        list.innerHTML = "<div class='text-sm muted'>Table transactions manquante.</div>";
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        list.innerHTML = "<div class='text-sm muted'>Aucune dépense / achat sur la période.</div>";
+        return;
+      }
+
+      data.forEach((t) => {
+        const typeLabel = t.type === "purchase" ? "Achat" : "Dépense";
+        const cat = t.category ? ` • ${escapeHtml(t.category)}` : "";
+        const el = document.createElement("div");
+        el.className = "run-item";
+        el.innerHTML = `
+          <div class="run-header">
+            <strong>${escapeHtml(typeLabel)} #${t.id}</strong>
+            <div class="run-date">${t.created_at ? new Date(t.created_at).toLocaleString("fr-FR") : "-"}</div>
+          </div>
+          <div class="run-description">${escapeHtml(t.description || "")}</div>
+          <div class="run-sales">${escapeHtml(cat)} • Montant: ${fmtUSD(t.amount)}</div>
+          ${t.photo_url ? `<div class="photos-preview"><img src="${t.photo_url}" alt="transaction ${t.id}" /></div>` : ""}
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    async function loadAdminTransactions(){
+      if (!currentUser) return;
+      const list = document.getElementById("admin-transactions-list");
+      list.innerHTML = "";
+
+      const { data, error } = await supa
+        .from("transactions")
+        .select("*")
+        .gte("created_at", sinceISO())
+        .order("created_at", { ascending:false })
+        .limit(120);
+
+      if (error) {
+        console.error(error);
+        list.innerHTML = "<div class='text-sm muted'>Table transactions manquante.</div>";
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        list.innerHTML = "<div class='text-sm muted'>Aucune transaction sur la période.</div>";
+        return;
+      }
+
+      data.forEach((t) => {
+        const typeLabel = t.type === "purchase" ? "Achat" : "Dépense";
+        const user = adminUsersCache[t.user_id];
+        const username = user ? (user.username || ("User #" + user.id)) : ("ID " + t.user_id);
+
+        const el = document.createElement("div");
+        el.className = "run-item";
+        el.innerHTML = `
+          <div class="run-header">
+            <strong>${escapeHtml(typeLabel)} #${t.id}</strong>
+            <div class="run-date">${t.created_at ? new Date(t.created_at).toLocaleString("fr-FR") : "-"}</div>
+          </div>
+          <div class="run-description">${escapeHtml(t.description || "")}</div>
+          <div class="run-sales">${escapeHtml(username)} • ${escapeHtml(t.category || "")} • Montant: ${fmtUSD(t.amount)}</div>
+          ${t.photo_url ? `<div class="photos-preview"><img src="${t.photo_url}" alt="transaction ${t.id}" /></div>` : ""}
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    // ---------------------------------------
+    // 🏃 RUNNERS — prime / grade
+    // ---------------------------------------
+    function computeRunnerGrade(count){
+  if (count >= BONUS_TIER2_RUNS) return "Silver II";
+  if (count >= BONUS_TIER1_RUNS) return "Silver I";
+  return "Bronze";
+}
+
+    function computeRunnerBonus(count){
+      if (count >= BONUS_TIER2_RUNS) return BONUS_TIER2_AMOUNT;
+      if (count >= BONUS_TIER1_RUNS) return BONUS_TIER1_AMOUNT;
+      return 0;
+    }
+
+    async function getWeeklyRunsMap(){
+  // ✅ maintenant: depuis week_start (période), pas "7 jours glissants"
+  const since = sinceISO();
+  const { data, error } = await supa
+    .from("runs")
+    .select("user_id, created_at")
+    .gte("created_at", since);
+
+  if (error) { console.error(error); return {}; }
+
+  const map = {};
+  (data || []).forEach(r => {
+    const uid = r.user_id;
+    if (!uid) return;
+    map[uid] = (map[uid] || 0) + 1;
+  });
+  return map;
+}
+
+
+    async function refreshRunnerWeekly(){
+      if (!currentUser) return;
+      const panel = document.getElementById("runner-weekly-panel");
+      if (!panel) return;
+
+      if (currentRole !== "runner") {
+        panel.classList.add("hidden");
+        return;
+      }
+      panel.classList.remove("hidden");
+
+      const map = await getWeeklyRunsMap();
+      const count = map[currentUser.id] || 0;
+      const grade = computeRunnerGrade(count);
+      const bonus = computeRunnerBonus(count);
+
+      document.getElementById("user-weekly-runs").textContent = String(count);
+      document.getElementById("user-weekly-grade").textContent = grade;
+      document.getElementById("user-weekly-bonus").textContent = fmtUSD(bonus);
+    }
+
+    // ---------------------------------------
+    // 💰 VENDEUR — commissions
+    // ---------------------------------------
+    async function refreshVendorEarnings(){
+      if (!currentUser) return;
+      const panel = document.getElementById("vendor-commission-panel");
+      if (!panel) return;
+
+      if (currentRole !== "vendeur") {
+        panel.classList.add("hidden");
+        return;
+      }
+      panel.classList.remove("hidden");
+
+      const pct = Number(currentUser.commission_percent || 0);
+      const ventes = await getVentesTotal(currentUser.id);
+      const gain = ventes * (pct / 100);
+
+      document.getElementById("user-commission-percent").textContent = `${pct}%`;
+      document.getElementById("user-vendor-ventes-sum").textContent = fmtUSD(ventes);
+      document.getElementById("user-commission-earnings").textContent = fmtUSD(gain);
+    }
+
+    async function refreshAdminRunnersBonus(){
+      const tableBody = document.querySelector("#admin-runners-bonus-table tbody");
+      if (!tableBody) return;
+
+      tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Chargement…</td></tr>";
+
+      const { data: runners, error: uErr } = await supa
+        .from("users")
+        .select("id, username, role")
+        .eq("role", "runner")
+        .order("created_at", { ascending: true });
+
+      if (uErr) { console.error(uErr); tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Erreur chargement runners.</td></tr>"; return; }
+
+      if (!runners || runners.length === 0) {
+        tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Aucun runner.</td></tr>";
+        return;
+      }
+
+      const weeklyMap = await getWeeklyRunsMap();
+
+      tableBody.innerHTML = "";
+      runners.forEach(r => {
+        const count = weeklyMap[r.id] || 0;
+        const grade = computeRunnerGrade(count);
+        const bonus = computeRunnerBonus(count);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(r.username || ("Runner #" + r.id))}</td>
+          <td>${count}</td>
+          <td><span class="badge-soft">${grade}</span></td>
+          <td>${fmtUSD(bonus)}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    async function refreshAdminVendorsCommissions(){
+      const tableBody = document.querySelector("#admin-vendors-commission-table tbody");
+      if (!tableBody) return;
+
+      tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Chargement…</td></tr>";
+
+      const { data: vendors, error: uErr } = await supa
+        .from("users")
+        .select("id, username, role, commission_percent")
+        .eq("role", "vendeur")
+        .order("created_at", { ascending: true });
+
+      if (uErr) { console.error(uErr); tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Erreur chargement vendeurs.</td></tr>"; return; }
+
+      if (!vendors || vendors.length === 0) {
+        tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Aucun vendeur.</td></tr>";
+        return;
+      }
+
+      const { data: ventes, error: vErr } = await supa
+        .from("ventes")
+        .select("user_id, amount, created_at")
+        .gte("created_at", sinceISO());
+      if (vErr) { console.error(vErr); tableBody.innerHTML = "<tr><td colspan='4' class='text-sm muted'>Erreur chargement ventes.</td></tr>"; return; }
+
+      const sumMap = {};
+      (ventes || []).forEach(v => {
+        const uid = v.user_id;
+        if (!uid) return;
+        sumMap[uid] = (sumMap[uid] || 0) + Number(v.amount || 0);
+      });
+
+      tableBody.innerHTML = "";
+      vendors.forEach(v => {
+        const ventesSum = sumMap[v.id] || 0;
+        const pct = Number(v.commission_percent || 0);
+        const gain = ventesSum * (pct / 100);
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(v.username || ("Vendeur #" + v.id))}</td>
+          <td>${pct}%</td>
+          <td>${fmtUSD(ventesSum)}</td>
+          <td>${fmtUSD(gain)}</td>
+        `;
+        tableBody.appendChild(tr);
+      });
+    }
+
+    async function refreshUserFinance(){
+      if (!currentUser) return;
+
+      const caEl = document.getElementById("user-ca-sum");
+      const purchasesEl = document.getElementById("user-purchases-sum");
+      const grossEl = document.getElementById("user-gross-sum");
+      const runsEl = document.getElementById("user-runs-sum");
+      const ventesEl = document.getElementById("user-ventes-sum");
+
+      const [runs, ventes, purchases] = await Promise.all([
+        getRunsTotal(currentUser.id),
+        getVentesTotal(currentUser.id),
+        getPurchasesTotal(currentUser.id)
+      ]);
+
+      const ca = runs + ventes;
+      const gross = ca - purchases;
+
+      if (runsEl) runsEl.textContent = fmtUSD(runs);
+      if (ventesEl) ventesEl.textContent = fmtUSD(ventes);
+
+      caEl.textContent = fmtUSD(ca);
+      purchasesEl.textContent = fmtUSD(purchases);
+      grossEl.textContent = fmtUSD(gross);
+
+      if (currentRole === "vendeur") await refreshVendorEarnings();
+      if (currentRole === "runner") await refreshRunnerWeekly();
+    }
+
+    // ---------------------------------------
+    // ✅ PDF SEMAINE + REPORTS
+    // ---------------------------------------
+    async function buildWeekStats(){
+      const periodStart = sinceISO();
+      const periodEnd = new Date().toISOString();
+
+      const { data: users } = await supa.from("users").select("id, username, role, commission_percent");
+      const { data: runs }  = await supa.from("runs").select("user_id, sales_amount, created_at").gte("created_at", periodStart);
+      const { data: ventes } = await supa.from("ventes").select("user_id, amount, created_at").gte("created_at", periodStart);
+      const { data: tx } = await supa.from("transactions").select("user_id, amount, type, category, created_at").gte("created_at", periodStart);
+
+      const userMap = {};
+      (users || []).forEach(u => {
+        userMap[u.id] = {
+          id: u.id,
+          name: u.username || ("User #" + u.id),
+          role: u.role || "user",
+          commission: Number(u.commission_percent || 0),
+          runsCount: 0,
+          runsSum: 0,
+          ventesCount: 0,
+          ventesSum: 0,
+          purchasesSum: 0
+        };
+      });
+
+      (runs || []).forEach(r => {
+        const u = userMap[r.user_id]; if (!u) return;
+        u.runsCount += 1;
+        u.runsSum += Number(r.sales_amount || 0);
+      });
+
+      (ventes || []).forEach(v => {
+        const u = userMap[v.user_id]; if (!u) return;
+        u.ventesCount += 1;
+        u.ventesSum += Number(v.amount || 0);
+      });
+
+      (tx || []).forEach(t => {
+        const u = userMap[t.user_id]; if (!u) return;
+        const isPurchase = (t.type === "purchase") || (t.category === "matiere_premiere");
+        if (isPurchase) u.purchasesSum += Number(t.amount || 0);
+      });
+
+      const rows = Object.values(userMap)
+        .filter(u => (u.runsCount + u.ventesCount + u.purchasesSum) > 0)
+        .sort((a,b)=> (b.runsSum+b.ventesSum) - (a.runsSum+b.ventesSum));
+
+      const runsSum = rows.reduce((a,u)=>a+u.runsSum,0);
+      const ventesSum = rows.reduce((a,u)=>a+u.ventesSum,0);
+      const purchasesSum = rows.reduce((a,u)=>a+u.purchasesSum,0);
+      const totalCA = runsSum + ventesSum;
+
+      return { periodStart, periodEnd, rows, runsSum, ventesSum, purchasesSum, totalCA };
+    }
+
+    async function exportWeekPDF(andUpload=true){
+      const stats = await buildWeekStats();
+
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ unit:"pt", format:"a4" });
+
+      doc.setFont("helvetica","bold");
+      doc.setFontSize(16);
+      doc.text("Punk Noodles — Rapport Semaine", 40, 48);
+
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.text(`Période: ${toFr(stats.periodStart)}  →  ${toFr(stats.periodEnd)}`, 40, 68);
+
+      doc.setFont("helvetica","bold");
+      doc.text(`Totaux: Runs ${fmtUSD(stats.runsSum)} | Ventes ${fmtUSD(stats.ventesSum)} | CA ${fmtUSD(stats.totalCA)} | Achats ${fmtUSD(stats.purchasesSum)}`, 40, 86);
+
+      const tableBody = stats.rows.map(u => ([
+        u.name,
+        u.role,
+        String(u.runsCount),
+        fmtUSD(u.runsSum),
+        String(u.ventesCount),
+        fmtUSD(u.ventesSum),
+        fmtUSD(u.runsSum + u.ventesSum),
+        fmtUSD(u.purchasesSum)
+      ]));
+
+      doc.autoTable({
+        startY: 110,
+        head: [["Personne","Rôle","Runs","Runs $","Ventes","Ventes $","CA","Achats MP"]],
+        body: tableBody,
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [30,30,30] }
+      });
+
+      const safeStart = new Date(stats.periodStart).toISOString().slice(0,10);
+      const safeEnd = new Date(stats.periodEnd).toISOString().slice(0,10);
+      const filename = `punknoodles_rapport_${safeStart}_to_${safeEnd}.pdf`;
+
+      // download local
+      doc.save(filename);
+
+      if (!andUpload) return;
+
+      // upload to storage
+      try{
+        const blob = doc.output("blob");
+        const path = `${Date.now()}_${filename}`;
+
+        const up = await supa.storage.from("weekly-reports").upload(path, blob, { contentType:"application/pdf" });
+        if (up.error) {
+          console.error(up.error);
+          alert("PDF généré mais upload impossible. Vérifie bucket weekly-reports (public).");
+          return;
+        }
+
+        const { data: pub } = supa.storage.from("weekly-reports").getPublicUrl(path);
+        const reportUrl = pub?.publicUrl;
+
+        const ins = await supa.from("weekly_reports").insert({
+          period_start: stats.periodStart,
+          period_end: stats.periodEnd,
+          runs_sum: stats.runsSum,
+          ventes_sum: stats.ventesSum,
+          purchases_sum: stats.purchasesSum,
+          total_ca: stats.totalCA,
+          report_url: reportUrl
+        });
+
+        if (ins.error) {
+          console.error(ins.error);
+          alert("PDF upload OK, mais insertion weekly_reports impossible. Vérifie la table.");
+          return;
+        }
+
+        await loadReports();
+      } catch(e){
+        console.error(e);
+        alert("Erreur génération/upload PDF (voir console).");
+      }
+    }
+
+    async function loadReports(){
+      const list = document.getElementById("admin-reports-list");
+      if (!list) return;
+
+      list.innerHTML = "<div class='text-sm muted'>Chargement…</div>";
+
+      const { data, error } = await supa
+        .from("weekly_reports")
+        .select("*")
+        .order("created_at", { ascending:false })
+        .limit(12);
+
+      if (error) {
+        console.error(error);
+        list.innerHTML = "<div class='text-sm muted'>Table weekly_reports manquante.</div>";
+        return;
+      }
+
+      if (!data || data.length === 0) {
+        list.innerHTML = "<div class='text-sm muted'>Aucun rapport enregistré.</div>";
+        return;
+      }
+
+      list.innerHTML = "";
+      data.forEach(r => {
+        const el = document.createElement("div");
+        el.className = "run-item";
+        el.innerHTML = `
+          <div class="run-header">
+            <strong>Rapport #${r.id}</strong>
+            <div class="run-date">${toFr(r.created_at)}</div>
+          </div>
+          <div class="run-description">Période: ${toFr(r.period_start)} → ${toFr(r.period_end)}</div>
+          <div class="run-sales">CA: ${fmtUSD(r.total_ca)} • Runs: ${fmtUSD(r.runs_sum)} • Ventes: ${fmtUSD(r.ventes_sum)} • Achats: ${fmtUSD(r.purchases_sum)}</div>
+          <div style="margin-top:8px;">
+            <a class="btn-secondary btn-sm" style="display:inline-block;text-decoration:none;padding:6px 10px;border-radius:12px;"
+               href="${r.report_url}" target="_blank">Ouvrir PDF</a>
+          </div>
+        `;
+        list.appendChild(el);
+      });
+    }
+
+    async function closeWeek(){
+      if (currentRole !== "admin") return;
+
+      const ok = confirm("Clôturer la semaine ?\n➡️ Génère PDF + reset période (week_start) + reset tombola + libère voitures.");
+      if (!ok) return;
+
+      // 1) PDF + upload
+      await exportWeekPDF(true);
+
+      // 2) reset tombola + cars
+      await resetTombola();
+      await releaseAllCars();
+
+      // 3) set new week_start = now
+      const nowISO = new Date().toISOString();
+      const upd = await supa.from("app_settings").upsert({ key:"week_start", value: nowISO, updated_at: nowISO });
+      if (upd.error) console.error(upd.error);
+      WEEK_START_ISO = nowISO;
+      updateHeaderPeriod();
+
+      // refresh UI
+      await loadTombola();
+      await loadCars();
+      await loadAdminDashboard();
+      await loadReports();
+
+      alert("✅ Semaine clôturée. Nouvelle période démarrée maintenant.");
+    }
+
+    // ---------------------------------------
+    // Logout
     // ---------------------------------------
     function logout() {
       currentUser = null;
       currentRole = null;
       adminSelectedUserId = null;
+      WEEK_START_ISO = null;
 
       document.getElementById("main-header").classList.add("hidden");
       document.getElementById("user-section").classList.add("hidden");
@@ -2201,8 +2817,15 @@
       document.getElementById("pin-overlay").classList.remove("hidden");
 
       clearPin();
-      const carsList = document.getElementById("cars-list");
-      if (carsList) carsList.innerHTML = "";
+
+      document.getElementById("cars-list").innerHTML = "";
+      document.getElementById("tombola-participants").innerHTML = "";
+      document.getElementById("tombola-draws").innerHTML = "";
+      document.getElementById("tombola-total-tickets").textContent = "0";
+      document.getElementById("tombola-winner-name").textContent = "—";
+      document.getElementById("tombola-winner-meta").textContent = "—";
+
+      document.getElementById("header-period")?.classList.add("hidden");
     }
 
     // ---------------------------------------
@@ -2211,24 +2834,52 @@
     document.addEventListener("DOMContentLoaded", () => {
       setupPinPad();
 
-      const btnAddRun = document.getElementById("btn-add-run");
-      if (btnAddRun) btnAddRun.addEventListener("click", addRun);
+      document.getElementById("btn-add-run")?.addEventListener("click", addRun);
+      document.getElementById("btn-add-vente")?.addEventListener("click", addVente);
+      document.getElementById("btn-logout")?.addEventListener("click", logout);
 
-      const btnAddVente = document.getElementById("btn-add-vente");
-      if (btnAddVente) btnAddVente.addEventListener("click", addVente);
+      document.getElementById("btn-admin-save-user")?.addEventListener("click", adminSaveUser);
+      document.getElementById("btn-admin-delete-user")?.addEventListener("click", adminDeleteUser);
 
-      const btnLogout = document.getElementById("btn-logout");
-      if (btnLogout) btnLogout.addEventListener("click", logout);
+      document.getElementById("admin-user-role")?.addEventListener("change", () => {
+        const role = document.getElementById("admin-user-role")?.value;
+        const row = document.getElementById("vendor-commission-row");
+        const input = document.getElementById("admin-user-commission");
+        if (!row) return;
+        if (role === "vendeur") {
+          row.style.display = "flex";
+          if (input && !input.value) input.value = "15";
+        } else {
+          row.style.display = "none";
+          if (input) input.value = "";
+        }
+      });
 
-      const btnAdminSaveUser = document.getElementById("btn-admin-save-user");
-      if (btnAdminSaveUser)
-        btnAdminSaveUser.addEventListener("click", adminSaveUser);
+      document.getElementById("btn-refresh-bonus")?.addEventListener("click", () => refreshAdminRunnersBonus());
+      document.getElementById("btn-refresh-commissions")?.addEventListener("click", () => refreshAdminVendorsCommissions());
 
-      const btnAdminDeleteUser = document.getElementById(
-        "btn-admin-delete-user"
-      );
-      if (btnAdminDeleteUser)
-        btnAdminDeleteUser.addEventListener("click", adminDeleteUser);
+      document.getElementById("btn-article")?.addEventListener("click", () => {
+        window.location.href = "article.html";
+      });
+
+      document.getElementById("btn-tombola-add")?.addEventListener("click", addParticipant);
+      document.getElementById("btn-tombola-refresh")?.addEventListener("click", loadTombola);
+      document.getElementById("btn-tombola-draw")?.addEventListener("click", drawWinner);
+
+      document.getElementById("txu-type")?.addEventListener("change", () => syncTxCategory("u"));
+      document.getElementById("txa-type")?.addEventListener("change", () => syncTxCategory("a"));
+
+      document.getElementById("btn-add-txu")?.addEventListener("click", () => addTransaction("u"));
+      document.getElementById("btn-add-txa")?.addEventListener("click", () => addTransaction("a"));
+      document.getElementById("btn-refresh-txa")?.addEventListener("click", loadAdminTransactions);
+
+      // ✅ PDF / Reset semaine
+      document.getElementById("btn-export-week-pdf")?.addEventListener("click", () => exportWeekPDF(true));
+      document.getElementById("btn-close-week")?.addEventListener("click", closeWeek);
+      document.getElementById("btn-refresh-reports")?.addEventListener("click", loadReports);
+
+      syncTxCategory("u");
+      syncTxCategory("a");
     });
   </script>
 </body>
