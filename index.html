@@ -2787,11 +2787,22 @@
       await releaseAllCars();
 
       // 3) set new week_start = now
-      const nowISO = new Date().toISOString();
-      const upd = await supa.from("app_settings").upsert({ key:"week_start", value: nowISO, updated_at: nowISO });
-      if (upd.error) console.error(upd.error);
-      WEEK_START_ISO = nowISO;
-      updateHeaderPeriod();
+     // 3) set new week_start = now (EN BASE, sinon on ne continue pas)
+const nowISO = new Date().toISOString();
+
+const upd = await supa
+  .from("app_settings")
+  .upsert({ key:"week_start", value: nowISO, updated_at: nowISO });
+
+if (upd.error) {
+  console.error("❌ Impossible d'écrire week_start en base:", upd.error);
+  alert("❌ Reset impossible: Supabase refuse l'update week_start (RLS/policy). Regarde la console.");
+  return; // 🔥 important : ne pas reset l'UI si la base ne suit pas
+}
+
+WEEK_START_ISO = nowISO;
+updateHeaderPeriod();
+
 
       // refresh UI
       await loadTombola();
